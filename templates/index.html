@@ -1,46 +1,49 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <!-- This is to link css and html-->
-    <link rel="stylesheet" href="css/main.css">
-</head>
-<body>
-    <div class="hero-bg">
-        <section class="left">
-            <header>
-               <a href="https://campusvirtual.urv.cat/local/alternatelogin/index.php">Moodle Urv</a> 
-            </header>            
-            <h1><span>Router & Switch<span> control</h1>
-            <p>
-                For the access of the switches or router switching on/off, we have to access with a user. 
+
+{% extends "base.html" %}
+{% block title %}  {% endblock %}
+{% block content %} 
+
+<div id="container" class="container-fluid" >
+  <div class="row">
+      <div id="left" class="col" >
+          <div id="left-form">
+              <h1><span>Router & Switch<span> control</h1>
+              <p>
+                  For the access of the switches or router switching on/off, we have to access with a user. 
               </p>
-              <p class="small"> If you want access please contact your teacher to create or administrate your access to the webpage!
-            </p>
-        </section>    
+
+              <form action="/POST">
+                <div class="form-floating mb-3">
+                  <input type="email" class="form-control" id="floatingInput" placeholder="name@example.com">
+                  <label for="floatingInput">Email address</label>
+                </div>
+                <div class="form-floating">
+                  <input type="password" class="form-control" id="floatingPassword" placeholder="Password">
+                  <label for="floatingPassword">Password</label>
+                </div>
+
         
-        <section class="right"> 
-             <div class="form">
-                <form action="">
-                    <div class="form-left">
-                        <label for="user">Enter your username and password</label>
-                        <label for="pass"></label>
-                        <input type="text" name="username" id = "user" value="username">
-                    </div>  
-                    <input type="password" name="password" id="pass" value ="password">
-                    <input type="button" value="Sign-in">
+              </form>
 
-                </form>
+          </div>
+          <div id="urvlogo">
+            <a href="https://campusvirtual.urv.cat/local/alternatelogin/index.php"> <img src="{{ url_for('static',filename='style/images/logoURVppd.png') }}">
+            </a>
+          </div>
+      </div>
 
-            </div>
+      <!-- This is MOODLE and URV LOGO-->
+      <div id="right" class="col-8" >
+          <div id="right-title" >
+                  <a href="https://campusvirtual.urv.cat/local/alternatelogin/index.php">Moodle Urv</a>     
+          </div>
+          <div id="right-image" style="height: 100%;">
+              <img id="background-image" src="{{ url_for('static',filename='style/images/1026.jpg') }}" style="width: 100%;background-repeat: no-repeat;position: static;">
+          </div>
+      </div>
+  </div>
+</div>
 
-        </section>
-        
 
-    </div>
-
-</body>
-</html>
+</div>
+{% endblock %}
