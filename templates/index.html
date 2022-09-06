@@ -1,35 +1,54 @@
 
-{% extends "base.html" %}
+{% extends "base/base.html" %}
 {% block title %}  {% endblock %}
 {% block content %} 
 
 <div id="container" class="container-fluid" >
   <div class="row">
-      <div id="left" class="col" >
-          <div id="left-form">
+    <div id="left" class="col" >
+      {%if email%}
+      <h1>Hi bithch</h1>
+      {% endif %}
+
+      {%if password%}
+      <h1></h1>
+      {% endif %}
+
+
+        {%if email%}
+          <h1>Hi {{email}}</h1>
+
+
+        {%else%}
+          <div id="left-form" >
               <h1><span>Router & Switch<span> control</h1>
               <p>
                   For the access of the switches or router switching on/off, we have to access with a user. 
               </p>
 
-              <form action="/POST">
-                <div class="form-floating mb-3">
-                  <input type="email" class="form-control" id="floatingInput" placeholder="name@example.com">
-                  <label for="floatingInput">Email address</label>
-                </div>
-                <div class="form-floating">
-                  <input type="password" class="form-control" id="floatingPassword" placeholder="Password">
-                  <label for="floatingPassword">Password</label>
-                </div>
-
-        
+              <form method="POST">
+                <!-- CRSF token -->
+                {{ form.hidden_tag() }}
+                
+                <!--FORMS-->
+                <!--Email-->
+                {{ form.email( class="form-control", placeholder="name@example.com")}}
+                
+                <!--Password-->
+                {{ form.password(class="form-control", placeholder="Password")}}   
+                <br/>
+                <!--Button-->
+                {{form.submit( class="btn btn-info")}}
+                
               </form>
+
 
           </div>
           <div id="urvlogo">
             <a href="https://campusvirtual.urv.cat/local/alternatelogin/index.php"> <img src="{{ url_for('static',filename='style/images/logoURVppd.png') }}">
             </a>
           </div>
+        {% endif %}
       </div>
 
       <!-- This is MOODLE and URV LOGO-->
