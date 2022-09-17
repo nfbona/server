@@ -1,7 +1,8 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request,flash
 
 # database
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 # datetime
 from datetime import datetime, timedelta
 
@@ -17,13 +18,14 @@ app.config['SECRET_KEY'] = "t7w!z%C*F-JaNdRgUkXp2s5v8x/A?D(G+KbPeShVmYq3t6w9z$B&
 #app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root@'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:327baf2bcf1c1bc4ba3fbb5a9b95e69db7b1e61222e12c04bbd5e5a5d8a3676c@localhost/users'
 db = SQLAlchemy(app)
+migrate=Migrate(app,db)
 
 #Model
 class Users(db.Model):
     id = db.Column(db.Integer,primary_key=True)
     email = db.Column(db.String(100), nullable=False,unique=True)
     date_added = db.Column(db.DateTime, default=datetime.utcnow)
-
+    password= db.Column(db.String(40),nullable=False)
     # create a string
     def __repr__(self):
             return '<Email %r>' % self.email
@@ -65,7 +67,7 @@ def signup():
     if form.validate_on_submit():
         user = Users.query.filter_by(email=form.email.data).first()
         if(user is None):
-            user = Users(email=form.email.data)
+            user = Users(email=form.email.data, password=form.password.data)
             db.session.add(user)
             db.session.commit()
         print("---------------------------------------------------------------\n\n\n",our_users,"\n\n")
@@ -76,7 +78,49 @@ def signup():
         our_users= Users.query.order_by(Users.date_added + timedelta(hours=2))
     return render_template('UserList.html', email=email, form=form, password=password, our_users=our_users)
  
+@app.route('/user/update/<int:id>', methods=['POST','GET'])
+def update(id):
+    email = None
+    password = None
+    form = PasswordForm()
+    name_update=Users.query.get_or_404(id)
+    #Validate form
+    if form.validate_on_submit():
+        name_update.email = request.form['email']
+        name_update.password = request.form['password']
+        db.session.commit()
+        form.email.data = ''
+        form.password.data=''
+        flash("User modified successfully!")
+    return render_template('UpdateUser.html', email=email, form=form, password=password,our_user=name_update)
+ 
 
+@app.route('/user/delete/<int:id>', methods=['POST','GET'])
+def delete(id):
+    email = None
+    password = None
+    form = PasswordForm()
+    name_update=Users.query.get_or_404(id)
+    #Validate form
+    try:			
+        db.session.delete(name_update)
+        db.session.commit()
+        flash("User deleted successfully!")
+        name_update.email = request.form['email']
+        name_update.password = request.form['password']
+        db.session.commit()
+        form.email.data = ''
+        form.password.data=''
+        our_users= Users.query.order_by(Users.date_added + timedelta(hours=2))
+        return render_template('UserList.html', email=email, form=form, password=password, our_users=our_users)
+    except:
+        our_users= Users.query.order_by(Users.date_added + timedelta(hours=2))
+        return render_template('UserList.html', email=email, form=form, password=password,our_users=our_users)
+     
+ 
+ 
+ 
+'''
 @app.route('/user/update/<int:id>', methods=['POST','GET'])
 def update(id):
     email = None
@@ -96,7 +140,7 @@ def update(id):
 
     else:
         return render_template('UpdateUser.html', email=email, form=form, password=password)
-
+'''
 #TESTING
 @app.route('/user', methods=['POST','GET'])
 def user():
