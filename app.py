@@ -1,10 +1,7 @@
-from asyncore import write
-from wsgiref.validate import validator
-from flask import Flask, render_template, url_for, request, redirect
+from flask import Flask, render_template, request
 
 # database
 from flask_sqlalchemy import SQLAlchemy
-
 # datetime
 from datetime import datetime, timedelta
 
@@ -16,8 +13,9 @@ from wtforms.validators import DataRequired,Email
 # initiating Flask, bootstrap, CRTF key
 app = Flask(__name__)
 app.config['SECRET_KEY'] = "t7w!z%C*F-JaNdRgUkXp2s5v8x/A?D(G+KbPeShVmYq3t6w9z$B&E)H@McQfTjWnZr4u7x!A%D*F-JaNdRgUkXp2s5v8y/B?E(H+KbPeShVmYq3t6w9z$C&F)J@NcQfT"
-
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
+# sql lite
+#app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root@'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:327baf2bcf1c1bc4ba3fbb5a9b95e69db7b1e61222e12c04bbd5e5a5d8a3676c@localhost/users'
 db = SQLAlchemy(app)
 
 #Model
@@ -30,10 +28,6 @@ class Users(db.Model):
     def __repr__(self):
             return '<Email %r>' % self.email
 
-class Todo(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    content = db.Column(db.String())
-
 # Create form class
 class PasswordForm(FlaskForm):
         email=EmailField("Email",validators=[Email()])
@@ -44,8 +38,6 @@ class PasswordForm(FlaskForm):
 class UserField(FlaskForm):
         email=EmailField("Email",validators=[Email()])
         submit = SubmitField('Submit')
-
-
 
 # the methods that the request can accept
 
@@ -62,19 +54,21 @@ def index():
         form.password.data=''
     return render_template('index.html', email=email,form=form, password=password)
 
+
 @app.route('/user/add', methods=['POST','GET'])
 def signup():
     email = None
     password = None
     form = PasswordForm()
+    our_users=Users.query.all()
     #Validate form
     if form.validate_on_submit():
         user = Users.query.filter_by(email=form.email.data).first()
-        print(user is None)
         if(user is None):
             user = Users(email=form.email.data)
             db.session.add(user)
             db.session.commit()
+        print("---------------------------------------------------------------\n\n\n",our_users,"\n\n")
         email = form.email.data
         password = form.password.data
         form.email.data = ''
@@ -82,6 +76,26 @@ def signup():
         our_users= Users.query.order_by(Users.date_added + timedelta(hours=2))
     return render_template('UserList.html', email=email, form=form, password=password, our_users=our_users)
  
+
+@app.route('/user/update/<int:id>', methods=['POST','GET'])
+def update(id):
+    email = None
+    password = None
+    form = PasswordField()
+    our_users=Users.query.all()
+    name_update=Users.query.get_or_404(id)
+    if request.method == "POST":
+        name_update.email = request.form['email']
+        #name_update.password = request.form['password']
+        try:
+            db.session.commit()
+            return render_template('UpdateUser.html', email=email, form=form, password=password)
+        except e:
+            db.session.commit()
+            return render_template('UpdateUser.html', email=email, form=form, password=password)
+
+    else:
+        return render_template('UpdateUser.html', email=email, form=form, password=password)
 
 #TESTING
 @app.route('/user', methods=['POST','GET'])
