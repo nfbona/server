@@ -8,8 +8,12 @@ from datetime import datetime, timedelta
 
 # forms, need to create forms and 
 from flask_wtf import FlaskForm
-from wtforms import  SubmitField,PasswordField,EmailField
-from wtforms.validators import DataRequired,Email
+from wtforms import  SubmitField,PasswordField,EmailField,PasswordField,BooleanField,ValidationError
+from wtforms.validators import DataRequired,Email,EqualTo,Length
+
+#import to password hashing
+from werkzeug.security import generate_password_hash,check_password_hash
+
 
 # initiating Flask, bootstrap, CRTF key
 app = Flask(__name__)
@@ -25,15 +29,31 @@ class Users(db.Model):
     id = db.Column(db.Integer,primary_key=True)
     email = db.Column(db.String(100), nullable=False,unique=True)
     date_added = db.Column(db.DateTime, default=datetime.utcnow)
-    password= db.Column(db.String(40),nullable=False)
+    password_hash= db.Column(db.String(128),nullable=False)
     # create a string
     def __repr__(self):
             return '<Email %r>' % self.email
-
-# Create form class
+    @property
+    def password(self):
+        raise AttributeError('Password is not a readable option')
+    @password.setter
+    def password(self,password):
+        self.password_hash = generate_password_hash(password)
+    
+    def checkPass(self,password):
+       return check_password_hash(self.password_hash,password)
+   
+# Creation or updating
 class PasswordForm(FlaskForm):
         email=EmailField("Email",validators=[Email()])
-        password=PasswordField("Password",validators=[DataRequired()])
+        password_hash=PasswordField("Password",validators=[DataRequired(),EqualTo('passwordCheck',message='Passwords must match')])
+        passwordCheck=PasswordField("Confirm Password",validators=[DataRequired()])
+        submit = SubmitField('Submit')
+        
+# Create to check in
+class LogIn(FlaskForm):
+        email=EmailField("Email",validators=[Email()])
+        password_hash=PasswordField("Password",validators=[DataRequired()])
         submit = SubmitField('Submit')
 
 # Create form class TESTUING
@@ -47,14 +67,22 @@ class UserField(FlaskForm):
 def index():
     email = None
     password = None
-    form = PasswordForm()
+    form = LogIn()
+    LoginPass=None
+    CheckUser=None
     #Validate form
     if form.validate_on_submit():
         email = form.email.data
-        password = form.password.data
+        password = form.password_hash.data
+        # clear data from form
         form.email.data = ''
-        form.password.data=''
-    return render_template('index.html', email=email,form=form, password=password)
+        form.password_hash.data=''
+        CheckUser = Users.query.filter_by(email=email).first()
+        if(CheckUser):
+            LoginPass=check_password_hash(CheckUser.password_hash,password)
+        return render_template('index.html', email=email,form=form, password=password,CheckUser=CheckUser,LoginPass=LoginPass)
+
+    return render_template('index.html', email=email,form=form, password=password,CheckUser=CheckUser)
 
 
 @app.route('/user/add', methods=['POST','GET'])
@@ -67,14 +95,13 @@ def signup():
     if form.validate_on_submit():
         user = Users.query.filter_by(email=form.email.data).first()
         if(user is None):
-            user = Users(email=form.email.data, password=form.password.data)
+            user = Users(email=form.email.data, password_hash= generate_password_hash(form.password_hash.data,"sha256"))
             db.session.add(user)
             db.session.commit()
-        print("---------------------------------------------------------------\n\n\n",our_users,"\n\n")
         email = form.email.data
-        password = form.password.data
+        password = form.password_hash.data
         form.email.data = ''
-        form.password.data=''
+        form.password_hash.data=''
         our_users= Users.query.order_by(Users.date_added + timedelta(hours=2))
     return render_template('UserList.html', email=email, form=form, password=password, our_users=our_users)
  
@@ -86,11 +113,10 @@ def update(id):
     name_update=Users.query.get_or_404(id)
     #Validate form
     if form.validate_on_submit():
-        name_update.email = request.form['email']
-        name_update.password = request.form['password']
+        name_update.password_hash=generate_password_hash(form.password_hash.data,"sha256")
         db.session.commit()
         form.email.data = ''
-        form.password.data=''
+        form.password_hash.data = ''
         flash("User modified successfully!")
     return render_template('UpdateUser.html', email=email, form=form, password=password,our_user=name_update)
  
@@ -110,7 +136,8 @@ def delete(id):
         name_update.password = request.form['password']
         db.session.commit()
         form.email.data = ''
-        form.password.data=''
+        form.password_hash.data=''
+        password=name_update.password_hash
         our_users= Users.query.order_by(Users.date_added + timedelta(hours=2))
         return render_template('UserList.html', email=email, form=form, password=password, our_users=our_users)
     except:
@@ -119,28 +146,7 @@ def delete(id):
      
  
  
- 
-'''
-@app.route('/user/update/<int:id>', methods=['POST','GET'])
-def update(id):
-    email = None
-    password = None
-    form = PasswordField()
-    our_users=Users.query.all()
-    name_update=Users.query.get_or_404(id)
-    if request.method == "POST":
-        name_update.email = request.form['email']
-        #name_update.password = request.form['password']
-        try:
-            db.session.commit()
-            return render_template('UpdateUser.html', email=email, form=form, password=password)
-        except e:
-            db.session.commit()
-            return render_template('UpdateUser.html', email=email, form=form, password=password)
 
-    else:
-        return render_template('UpdateUser.html', email=email, form=form, password=password)
-'''
 #TESTING
 @app.route('/user', methods=['POST','GET'])
 def user():
@@ -151,6 +157,15 @@ def user():
         email = form.email.data
         form.email.data = ''
     return render_template('user.html', email=email,form=form)
+
+@app.route('/json', methods=['POST','GET'])
+def json():
+    json={"asd":"asd", "bb":"asd","sdasd":2}
+    return json
+    return render_template('user.html', email=email,form=form)
+
+
+
 
 @app.errorhandler(404)
 def error400(e):

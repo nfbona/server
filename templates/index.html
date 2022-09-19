@@ -1,24 +1,20 @@
 
-{% extends "base/base.html" %}
+{% extends "base/baseNavbar.html" %}
 {% block title %}  {% endblock %}
 {% block content %} 
 
 <div id="container" class="container-fluid" >
   <div class="row">
     <div id="left" class="col" >
-      {%if email%}
-      <h1>Hi bithch</h1>
-      {% endif %}
-
-      {%if password%}
-      <h1></h1>
-      {% endif %}
 
 
-        {%if email%}
-          <h1>Hi {{email}}</h1>
 
-
+      <h1>Hi {{email}}</h1>
+      <h3>Email: {{CheckUser.email}}</h3>
+      <h3>Password: {{CheckUser.password_hash}}</h3>
+      <h3>Same pass?{{LoginPass}}</h3>
+      
+      {%if CheckUser.password_hash%}
         {%else%}
           <div id="left-form" >
               <h1><span>Router & Switch<span> control</h1>
@@ -35,7 +31,7 @@
                 {{ form.email( class="form-control", placeholder="name@example.com")}}
                 
                 <!--Password-->
-                {{ form.password(class="form-control", placeholder="Password")}}   
+                {{ form.password_hash(class="form-control", placeholder="Password")}}   
                 <br/>
                 <!--Button-->
                 {{form.submit( class="btn btn-info")}}

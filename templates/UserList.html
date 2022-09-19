@@ -20,12 +20,14 @@
                 
                 <!--FORMS-->
                 <!--Email-->
+                {{ form.email.label(class="form-label")}}
                 {{ form.email(class="form-control", placeholder="name@example.com")}}
                 <!-- -->
 
 
                 <!--Password-->
-                {{ form.password(class="form-control",  placeholder="Password")}}   
+                {{ form.password_hash.label(class="form-label")}}   
+                {{ form.password_hash(class="form-control",  placeholder="Password")}}   
                 <!---->
                 
                 
@@ -62,7 +64,7 @@
               <tr>
               <td>{{our_user.id}}</td>
               <td>{{our_user.email}}</td>
-               <td><a class="btn btn-primary" href="{{url_for('update',id=our_user.id)}}"> {{our_user.password}} </a> </td>
+               <td><a class="btn btn-primary" href="{{url_for('update',id=our_user.id)}}"> {{our_user.password_hash}} </a> </td>
                <td><a class="btn btn-danger" href="{{url_for('delete',id=our_user.id)}}">Delete</td>
               </tr>
               {% endfor %}
