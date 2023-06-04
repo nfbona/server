@@ -4,16 +4,16 @@
 {% block content %} 
 
 <div id="container" class="container-fluid" >
+  {%for message in get_flashed_messages()%}
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    {{message}}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div> 
+  {%endfor%}
   <div class="row">
     <div id="left" class="col" >
 
 
-
-      <h1>Hi {{email}}</h1>
-      <h3>Email: {{CheckUser.email}}</h3>
-      <h3>Password: {{CheckUser.password_hash}}</h3>
-      <h3>Same pass?{{LoginPass}}</h3>
-      
       {%if CheckUser.password_hash%}
         {%else%}
           <div id="left-form" >

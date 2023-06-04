@@ -10,42 +10,13 @@
   <div class="row">
     <div id="left" class="col" >
 
-          <div id="left-form" >
-              <h1><strong>POST</strong> with password</h1>
-              <p></p>
-
-              <form action="/user/add" method="POST">
-                <!-- CRSF token -->
-                {{ form.hidden_tag() }}
-                
-                <!--FORMS-->
-                <!--Email-->
-                {{ form.email.label(class="form-label")}}
-                {{ form.email(class="form-control", placeholder="name@example.com")}}
-                <!-- -->
-
-
-                <!--Password-->
-                {{ form.password_hash.label(class="form-label")}}   
-                {{ form.password_hash(class="form-control",  placeholder="Password")}}   
-                <!---->
-                
-                
-                <br/>
-                <!--Button-->
-                {{form.submit( class="btn btn-info")}}
-                
-              </form>
-
-
-          </div>
+   
           <div id="urvlogo">
             <a href="https://campusvirtual.urv.cat/local/alternatelogin/index.php"> <img src="{{ url_for('static',filename='style/images/logoURVppd.png') }}">
             </a>
           </div>
       </div>
 
-     
       <div id="right" class="col-8" >
           <h1 style="display: flex;justify-content: center;">List of Users</h1>
           <div id="right-image" style="height: 100%;">
