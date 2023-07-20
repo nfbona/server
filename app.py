@@ -1,5 +1,7 @@
 from flask import Flask, render_template, request,flash,redirect,url_for,session
 
+import asyncio 
+
 # database
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -18,6 +20,17 @@ from flask_login import UserMixin,LoginManager,login_user,login_required,logout_
 # Forms
 from forms import PasswordForm,LogInForm,UserField
 
+# SSE Server side events
+from flask_sse import sse
+
+# ----------REQUEST COOKIE -----------
+"""
+Response.set_cookie('key','value')
+
+request.cookies.get('key')
+
+"""
+
 
 # initiating Flask, bootstrap, CRTF key
 app = Flask(__name__)
@@ -28,6 +41,11 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:327baf2bcf1c1bc4ba
 db = SQLAlchemy(app)
 migrate=Migrate(app,db)
  
+ 
+# SSE
+app.config["REDIS_URL"] = "redis://localhost"
+app.register_blueprint(sse, url_prefix='/sse')
+ 
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -36,9 +54,8 @@ login_manager.login_view = 'login'
 def load_user(user_id):
     return Users.query.get(int(user_id)) 
  
-
+# Global variable
 TIMETOWAIT=10
-
 
 #Model
 class Users(db.Model, UserMixin):
@@ -87,7 +104,11 @@ class Relay(db.Model, UserMixin):
 # the methods that the request can accept
 
 @app.route('/', methods=['POST', 'GET'])
-def login(): 
+async def login(): 
+    
+    if(current_user.is_authenticated):
+        return redirect(url_for('switch'))
+    
     email = None
     password = None
     form = LogInForm()
@@ -101,6 +122,7 @@ def login():
             if users.checkPass(form.password_hash.data):
                 session['user']=generate_password_hash(str(users.id))
                 login_user(users)
+                
                 flash('Correct username and password')
                 return redirect(url_for('switch'))
         # clear data from form
@@ -108,16 +130,16 @@ def login():
                 flash('Invalid username or password')
         else:
             flash('Invalid username or password')
-    return render_template('index.html', email=email,form=form, password=password,CheckUser=CheckUser)
+    return render_template('Login.html', email=email,form=form, password=password,CheckUser=CheckUser)
 
 @app.route('/logout',methods=['POST','GET'])
 @login_required
-def logout():
+async def logout():
     logout_user()
     return redirect('/')
 
 @app.route('/user/signup', methods=['POST','GET'])
-def signup():
+async def signup():
     email = None
     password = None
     form = PasswordForm()
@@ -137,8 +159,7 @@ def signup():
     return render_template('SignUp.html', email=email, form=form, password=password, our_users=our_users)
  
 @app.route('/user/update/<int:id>', methods=['POST','GET'])
-def update(id):
-    print("USERID: ",current_user.id,", Role_ID: ",current_user.roles_id)
+async def update(id):
     if(current_user.id == id or current_user.roles_id ==1):
         email = None
         password = None
@@ -155,11 +176,9 @@ def update(id):
     flash("Not valid :S")
     return redirect(url_for('signup'))
     
-    
-    
 @app.route('/user/delete/<int:id>', methods=['POST','GET'])
 @login_required
-def delete(id):
+async def delete(id):
     email = None
     password = None
     form = PasswordForm()
@@ -181,58 +200,55 @@ def delete(id):
         our_users= Users.query.order_by(Users.date_added + timedelta(hours=2))
         return render_template('UserList.html', email=email, form=form, password=password,our_users=our_users)
      
-#TESTING
+#Switch
 @app.route('/switch', methods=['POST','GET'])
 @login_required
-def switch():
+async def switch():
     return render_template('Switch.html')
-    try:
-        db.session.pop('user',None)
-        del db.session['username']
-    except:
-        print("Error")
-    return render_template('logout.html')
 
 # database
 @app.route('/database', methods=['POST','GET'])
-def database():
-
+async def database():
+    print(db.get_tables_for_bind())
     if request.method=='POST':
         db.drop_all()
+        db.session.commit()
         db.create_all()
+        db.session.commit()
     relays=Relay.query.all()
     print(relays)
-    if(len(relays)==0):
-        print("No relays")
-        db.session.add(Relay(_id=1,_state=False,_DateTime=datetime.now()))
-        db.session.add(Relay(_id=2,_state=False,_DateTime=datetime.now()))
-        db.session.add(Relay(_id=3,_state=False,_DateTime=datetime.now()))
-        db.session.add(Relay(_id=4,_state=False,_DateTime=datetime.now()))
-        db.session.add(Relay(_id=5,_state=False,_DateTime=datetime.now()))
-        db.session.add(Relay(_id=6,_state=False,_DateTime=datetime.now()))
-        db.session.add(Relay(_id=7,_state=False,_DateTime=datetime.now()))
-        db.session.add(Relay(_id=8,_state=False,_DateTime=datetime.now()))
-        db.session.add(Relay(_id=9,_state=False,_DateTime=datetime.now()))
-        db.session.add(Relay(_id=10,_state=False,_DateTime=datetime.now()))
-        db.session.add(Relay(_id=11,_state=False,_DateTime=datetime.now()))
-        db.session.add(Relay(_id=12,_state=False,_DateTime=datetime.now()))
-        db.session.commit()
-    
-    roles=Roles.query.all()
-    print(roles)
-    if(len(roles)==0):
-        db.session.add(Roles(id=1,name='Admin'))
-        db.session.add(Roles(id=2,name='User'))
-        db.session.commit()
-    
-    
-    users=Users.query.order_by(Users.date_added + timedelta(hours=2))
+    try:
+        if(len(relays)==0):
+            print("No relays")
+            db.session.add(Relay(_id=1,_state=False,_DateTime=datetime.now()))
+            db.session.add(Relay(_id=2,_state=False,_DateTime=datetime.now()))
+            db.session.add(Relay(_id=3,_state=False,_DateTime=datetime.now()))
+            db.session.add(Relay(_id=4,_state=False,_DateTime=datetime.now()))
+            db.session.add(Relay(_id=5,_state=False,_DateTime=datetime.now()))
+            db.session.add(Relay(_id=6,_state=False,_DateTime=datetime.now()))
+            db.session.add(Relay(_id=7,_state=False,_DateTime=datetime.now()))
+            db.session.add(Relay(_id=8,_state=False,_DateTime=datetime.now()))
+            db.session.add(Relay(_id=9,_state=False,_DateTime=datetime.now()))
+            db.session.add(Relay(_id=10,_state=False,_DateTime=datetime.now()))
+            db.session.add(Relay(_id=11,_state=False,_DateTime=datetime.now()))
+            db.session.add(Relay(_id=12,_state=False,_DateTime=datetime.now()))
+            db.session.commit()
+        
+        roles=Roles.query.all()
+        print(roles)
+        if(len(roles)==0):
+            db.session.add(Roles(id=1,name='Admin'))
+            db.session.add(Roles(id=2,name='User'))
+            db.session.commit()
+    except:    
+        db.create_all()
+    users=Users.query.all()
     return render_template('databse.html',our_roles=roles,our_relays=relays,our_users=users)
 
-#TESTING
+#userlist
 @app.route('/user', methods=['POST','GET'])
 @login_required
-def user():
+async def user():
     email = None
     form = UserField()
     #Validate form
@@ -243,7 +259,7 @@ def user():
 
 @app.route('/json', methods=['POST','GET'])
 @login_required
-def json():
+async def json():
     if request.method == 'POST':  #this block is only entered when the form is submitted
         rely=Relay.query.filter_by(_id=request.json['id']).first()
         print('IF: ',(datetime.now()-timedelta(seconds=TIMETOWAIT)) > rely._DateTime,', Delta time: ',rely._DateTime, ', Datetime to pass:',datetime.now()-timedelta(seconds=TIMETOWAIT))
@@ -252,6 +268,7 @@ def json():
             """
             print(rely.state)
             """
+            
             rely.state=request.json['value']
             db.session.commit()
         else:
@@ -265,41 +282,36 @@ def json():
         return relays
 
     return Relay
- 
- 
- 
- # NEW TEMPLATES TO BE MADE
+
+
 
 # ------------------  NEW TEMPLATES TO BE MADE ------------------ #
 
 @app.route('/history', methods=['POST','GET'])
 @login_required
-def history():
+async def history():
   return render_template('History.html')
-
 
 @app.route('/configuration', methods=['POST','GET'])
 @login_required
-def configuration():
+async def configuration():
   return render_template('Configuration.html')
 
 @app.errorhandler(404)
-def error400(e):
+async def error400(e):
     return render_template('error/404.html')  
 
 @login_manager.unauthorized_handler
-def unauthorized_callback():
+async def unauthorized_callback():
     return redirect('error/404.html')
 
 @app.errorhandler(500)
-def error500(e):
+async def error500(e):
     return render_template('error/500.html')  
 
-def init():
-    
-    db.session.add(Roles(role="Admin"))
-
-
 if __name__ == "__main__":
+    db.create_all()
     app.run(debug=True)
+    
+
     

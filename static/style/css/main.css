@@ -7,8 +7,13 @@ html,body
     font-family: "Comfortaa",sans-serif;
     background: #b3e0ff;
     height : 100%;
+    width: 100%;
     margin:0;
     padding: 0%;
+}
+
+.nav-item{
+    font-size: 1.5vw; 
 }
 
 header
@@ -22,9 +27,139 @@ header
 {
     background: #eaf7ff;
     padding: 1em;
+    margin:0;
+    padding: 0%;
 }
 
 #container
 {
+    margin:0;
     padding: 0%;
 }
+
+.invisible {
+    visibility: hidden !important;
+  }
+  
+  .hidden-xs-up {
+    display: none !important;
+  }
+  
+
+
+@media (max-width: 992px) {
+    .navbar{
+        height: 4.75em;
+        padding-top: 0%;
+        padding-left: 0.85em;
+    }
+  
+    .navbar-brand img{
+      padding: 1.5%;
+      height: 4.5vw;
+    }
+
+    .navbar .container{
+      margin:0;
+    }
+}
+
+@media (min-width: 992px) {
+  #navbarLogo{
+    margin-right: 15vw;
+  }
+
+  .navbar-brand img{
+    height: 4.5vw;
+  }
+
+  .navbar{
+    height: 10%;
+    padding: 1.5%;
+    
+  }
+
+  .navbar .container{
+    margin:0;
+    width: 100vw;
+    max-width: 100vw;
+    padding: 0.5vw;
+  }
+}
+
+
+
+
+
+
+/* ----------------- LOGIN PAGE -------------------*/
+@media (max-width: 991px) {
+    .col-8{
+        width: 100%;
+        margin:0;
+        padding: 0%;
+    }
+    .row{
+        margin-right:0%;
+        padding: 0%;
+        margin-left:0%;
+
+    }
+    #left{
+        width: 100%;
+        padding-right: 10%; 
+        padding-left: 10%; 
+    }
+    #right{
+        display: none !important;
+        margin:0;
+        padding: 0%;
+    }
+  }
+  
+  @media (min-width: 992px) {
+    .col-8{
+        width: max-content;
+        margin:0;
+        padding: 0%;
+    }
+    .row{
+        margin-right:0%;
+        margin-left:0%;
+        padding: 0%;
+
+    }
+    #left{
+        padding-right: 10%; 
+        padding-left: 2%; 
+    }
+    #right{
+        margin:0;
+        padding: 0%;
+    }
+    #left-form p{
+        font-size: 1vw;    
+      }
+    #left-form h1{
+    font-size: 1vw;  
+    }
+    #left-form form input .form-control{
+    font-size: 1vw;  
+    border-radius: 0.5vw;
+    height: 2vw;
+    width: 2vw;
+    }
+
+    #left-form{
+        height: 34vw;
+    }
+
+
+  }
+  #left-form{
+    border-bottom-right-radius:1vw;
+    border-bottom-left-radius:1vw;
+    padding:10%;
+    
+  }
+
