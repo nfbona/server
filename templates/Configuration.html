@@ -1,0 +1,48 @@
+
+{% extends "base/baseNavbar.html" %}
+
+{% block title %}  {% endblock %}
+{% block content %} 
+
+<div id="container" class="container-fluid" >
+  <div class="row">
+    <div id="left" class="col" >
+      {%if email%}
+      <h1>Hi bithch</h1>
+      {% endif %}
+
+      </div>
+        <form action="/sse" method="get" id="form1"> 
+        </form>
+        <button type="submit" form="form1" value="Submit">Submit</button>
+      <!--  This is a form to cheeck sse       -->
+      <div>
+
+      <!-- This is MOODLE and URV LOGO-->
+      <div id="right" class="hidden-md-down">
+
+        
+          <div id="right-title" >
+                  <a href="https://campusvirtual.urv.cat/local/alternatelogin/index.php">Moodle Urv</a>     
+          </div>
+          <div id="right-image" style="height: 100%;">
+              <img id="background-image" src="{{ url_for('static',filename='style/images/1026.jpg') }}" style="width: 100%;background-repeat: no-repeat;position: static;">
+          </div>
+      </div>
+  </div>
+</div>
+
+
+</div>
+{% endblock %}
+<script>  
+  var source= new EventSource("/stream");
+
+  source.addEventListener('greeting', function(event) {
+      var data = JSON.parse(event.data);
+      console.log("Message caught");
+      console.log(data.message);
+  });
+
+
+ </script>
