@@ -1,0 +1,45 @@
+version: '3.9'
+
+services:
+    mysql:
+        container_name: mysql
+        image: mysql
+        restart: always
+        build:
+            context: ./MySql/
+            dockerfile: Dockerfile
+            target: base
+        environment:
+            MYSQL_ROOT_PASSWORD: ${DATABASE_PASSWORD}
+        volumes:
+            - ./data:/var/lib/mysql
+            - ./logs:/var/log/mysql
+        networks:
+            xarxa_interna:
+                ipv4_address: 192.168.2.20
+        hostname: mysql
+        
+
+    app_flask:
+        tty: true
+        container_name: flask_app
+        depends_on: 
+            - mysql
+        build:
+            context: .
+            dockerfile: Dockerfile
+        ports:
+            - 80:5000
+        expose:
+            - 80
+        networks:
+            xarxa_interna:
+                ipv4_address: 192.168.2.99
+        hostname: flask_app
+        restart: always
+
+networks:
+    xarxa_interna:
+        ipam:
+            config:
+                - subnet: '192.168.2.0/24'

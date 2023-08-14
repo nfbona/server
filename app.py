@@ -6,15 +6,11 @@ import asyncio
 from datetime import datetime, timedelta
 
 # Custom forms for login and password and more... 
-from forms import PasswordForm,LogInForm,UserField
+from Modules.forms import PasswordForm,LogInForm,UserField
 from werkzeug.security import generate_password_hash
 
 # User Login
 from flask_login import LoginManager,login_user,login_required,logout_user,current_user
-
-# Forms
-from forms import PasswordForm,LogInForm,UserField
-
 
 # SQL alchemy
 from flask_sqlalchemy import SQLAlchemy
@@ -35,10 +31,13 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:327baf2bcf1c1bc4ba
 
 db = SQLAlchemy(app)
 
-
 # needed to be imported after db is initalized. As the db is using this module.
 from Modules.models import db,Users,Relay,Roles
 
+print("DB CREATED!")
+user = Users(email="nfbona@gmail.com", password_hash= generate_password_hash("asdasd","sha256"))
+my_cursor=db.cursor()
+my_cursor.execute("SHOW DATABASES")
  
 login_manager = LoginManager()
 login_manager.init_app(app)

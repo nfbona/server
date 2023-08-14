@@ -16,8 +16,7 @@ COPY . .
 ENV FLASK_APP=app.py
 
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]
-
-#"--workers","4"]
+#,"--workers","1"]
 
 
 
