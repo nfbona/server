@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request,flash,redirect,url_for,session
 
-import asyncio 
-
+import os
+from dotenv import load_dotenv
 # datetime
 from datetime import datetime, timedelta
 
@@ -12,8 +12,6 @@ from werkzeug.security import generate_password_hash
 # User Login
 from flask_login import LoginManager,login_user,login_required,logout_user,current_user
 
-# SQL alchemy
-from flask_sqlalchemy import SQLAlchemy
 # ----------REQUEST COOKIE -----------
 """
 Response.set_cookie('key','value')
@@ -22,26 +20,36 @@ request.cookies.get('key')
 
 """
 
+# DB
+## Initiating models
+from Modules.models import db,Users,Relay,Roles
+## Create the tables in the sql 
+from flask_migrate import Migrate
 
+
+# Load environment variables
+load_dotenv()
+sql_uri=os.environ.get('SQL_URI')
+crtf_key=os.environ.get('CRTF_KEY')
+
+print(sql_uri)
 # initiating Flask, bootstrap, CRTF key
 app = Flask(__name__)
-app.config['SECRET_KEY'] = "t7w!z%C*F-JaNdRgUkXp2s5v8x/A?D(G+KbPeShVmYq3t6w9z$B&E)H@McQfTjWnZr4u7x!A%D*F-JaNdRgUkXp2s5v8y/B?E(H+KbPeShVmYq3t6w9z$C&F)J@NcQfT"
-# sql lite
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:327baf2bcf1c1bc4ba3fbb5a9b95e69db7b1e61222e12c04bbd5e5a5d8a3676c@mysql/SQL_DB'
+app.config['SECRET_KEY'] = str(crtf_key)
 
-db = SQLAlchemy(app)
 
-# needed to be imported after db is initalized. As the db is using this module.
-from Modules.models import db,Users,Relay,Roles
+# mysql+pymysql://username:password@host/dbname
+app.config['SQLALCHEMY_DATABASE_URI'] = str(sql_uri)
 
-print("DB CREATED!")
-user = Users(email="nfbona@gmail.com", password_hash= generate_password_hash("asdasd","sha256"))
-my_cursor=db.cursor()
-my_cursor.execute("SHOW DATABASES")
- 
+## TEST CONNECTION TO SQL_Alchemy
+db.init_app(app)
+migrate = Migrate(app, db)
+
+
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+ 
  
 @login_manager.user_loader
 def load_user(user_id):
@@ -155,6 +163,14 @@ def delete(id):
 def switch():
     return render_template('Switch.html')
 
+
+# ---------------------------------TETS_---------------
+@app.route('/a1', methods=['POST','GET'])
+def a1():
+    users=session.query(Users).all()
+    session.close()
+    return json(users)
+
 #userlist
 @app.route('/user', methods=['POST','GET'])
 @login_required
@@ -192,8 +208,6 @@ def json():
         return relays
 
     return Relay
-
-
 
 # ------------------  NEW TEMPLATES TO BE MADE ------------------ #
 
@@ -272,7 +286,6 @@ def database():
 
 
 if __name__=="__main__":
-    db.init_app(app)
     db.create_all()
     app.run()
     

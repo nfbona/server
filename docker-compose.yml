@@ -11,12 +11,18 @@ services:
             target: base
         environment:
             MYSQL_ROOT_PASSWORD: ${DATABASE_PASSWORD}
+        ports:
+            - 3306:3306
+        command: --init-file /data/application/init.sql
+        expose:
+            - 3306
         volumes:
+            - ./MySql/init.sql:/data/application/init.sql
             - ./data:/var/lib/mysql
             - ./logs:/var/log/mysql
         networks:
             xarxa_interna:
-                ipv4_address: 192.168.2.20
+                ipv4_address: 172.22.0.11
         hostname: mysql
         
 
@@ -34,12 +40,24 @@ services:
             - 80
         networks:
             xarxa_interna:
-                ipv4_address: 192.168.2.99
+                ipv4_address: 172.22.0.22
         hostname: flask_app
         restart: always
+        privileged: true #required for the gpio
+        
+    init_db:
+        command: ["sh", "-c", "sleep 3  && python ./init_db.py"]
+        depends_on: 
+            - app_flask
+        build:
+            context: .
+        networks:
+            xarxa_interna:
+                ipv4_address: 172.22.0.33
 
 networks:
     xarxa_interna:
+        name: internalNet
         ipam:
             config:
-                - subnet: '192.168.2.0/24'
+                - subnet: '172.22.0.0/24'

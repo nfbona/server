@@ -1,16 +1,15 @@
 # database Makes easier the interaction between sql and python, its a ORM (object relation)
-from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from datetime import datetime
+from flask_sqlalchemy import SQLAlchemy
 
-from app import db
+db = SQLAlchemy()
 #import to password hashing
 from werkzeug.security import generate_password_hash,check_password_hash
 
-
-
 #Model
 class Users(db.Model, UserMixin):
+    __tablename__ = 'users'
     id = db.Column(db.Integer,primary_key=True)
     email = db.Column(db.String(100), nullable=False,unique=True)
     date_added = db.Column(db.DateTime, default=datetime.utcnow)
@@ -36,11 +35,13 @@ class Users(db.Model, UserMixin):
        return check_password_hash(self._password_hash,password)
 
 class Roles(db.Model, UserMixin):
+    __tablename__ = 'roles'
     id = db.Column(db.Integer,primary_key=True,unique=True)
     date_added = db.Column(db.DateTime, default=datetime.utcnow)
     name = db.Column(db.String(100), nullable=False,unique=True)
 
 class Relay(db.Model, UserMixin):
+    __tablename__ = 'relays'
     id= db.Column(db.Integer,primary_key=True,nullable=False,unique=True)
     state= db.Column(db.Boolean,nullable=False)
     date_modified= db.Column(db.DateTime,nullable=False)
