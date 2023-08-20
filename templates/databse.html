@@ -58,19 +58,18 @@
                   <th>Id</th>
                   <th>state</th>
                   <th>DateTime</th>
+                  <th>name</th>
                 </tr>
               </thead>
               {% for our_relay in our_relays %}
               <tr>
-                <td>{{our_relay._id}}</td>
-                <td>{{our_relay._state}}</td>
-                <td>{{our_relay._DateTime}}</td>
+                <td>{{our_relay.id}}</td>
+                <td>{{our_relay.state}}</td>
+                <td>{{our_relay.date_modified}}</td>
+                <td>{{our_relay.name}}</td>
               </tr>
               {% endfor %}
             </table>
-            <form action="/database" method="post">
-              <button>Restart</button>
-            </form>
        </div>
   </div>
 </div>

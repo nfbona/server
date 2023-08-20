@@ -27,29 +27,38 @@ from Modules.models import db,Users,Relay,Roles
 from flask_migrate import Migrate
 
 
-# Load environment variables
-load_dotenv()
-sql_uri=os.environ.get('SQL_URI')
-crtf_key=os.environ.get('CRTF_KEY')
+def create_app(db):
+    app_name='MYAPPNAME'
+    # Load environment variables
+    load_dotenv()
+    sql_uri=os.environ.get('SQL_URI')
+    crtf_key=os.environ.get('CRTF_KEY')
+    MIGRATION_DIR = os.path.join('Modules', 'migrations')
 
-print(sql_uri)
-# initiating Flask, bootstrap, CRTF key
-app = Flask(__name__)
-app.config['SECRET_KEY'] = str(crtf_key)
-
-
-# mysql+pymysql://username:password@host/dbname
-app.config['SQLALCHEMY_DATABASE_URI'] = str(sql_uri)
-
-## TEST CONNECTION TO SQL_Alchemy
-db.init_app(app)
-migrate = Migrate(app, db)
+    print(sql_uri)
+    # initiating Flask, bootstrap, CRTF key
+    app = Flask(__name__)
+    app.config['SECRET_KEY'] = str(crtf_key)
 
 
+    # mysql+pymysql://username:password@host/dbname
+    app.config['SQLALCHEMY_DATABASE_URI'] = str(sql_uri)
+    # push configuration
+    app.app_context().push()
+
+    ## TEST CONNECTION TO SQL_Alchemy
+    db.init_app(app)
+    migrate = Migrate(app, db,directory=MIGRATION_DIR)
+    return app
+ 
+ 
+app=create_app(db)
+
+# pw
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
- 
+
  
 @login_manager.user_loader
 def load_user(user_id):
@@ -103,16 +112,23 @@ def signup():
     our_users=Users.query.all()
     #Validate form
     if form.validate_on_submit():
+        print("Email: ",form.email.data)
+        print("Password: ",form.password_hash.data)
         user = Users.query.filter_by(email=form.email.data).first()
+        print("users: ",user)
         if(user is None):
             user = Users(email=form.email.data, password_hash= generate_password_hash(form.password_hash.data,"sha256"))
+            print("user inserted: ",user)   
             db.session.add(user)
             db.session.commit()
         email = form.email.data
+        print("user inserted: ",email)   
         password = form.password_hash.data
+        print("user inserted: ",password)   
         form.email.data = ''
         form.password_hash.data=''
         our_users= Users.query.order_by(Users.date_added + timedelta(hours=2))
+        print("user inserted: ",our_users)   
     return render_template('SignUp.html', email=email, form=form, password=password, our_users=our_users)
  
 @app.route('/user/update/<int:id>', methods=['POST','GET'])
@@ -236,41 +252,26 @@ def error500(e):
 # database Creation 
 @app.route('/database', methods=['POST','GET'])
 def database():
-    my_cursor=db.cursor()
-    my_cursor.execute("SHOW DATABASES")
-    usersExist=False
-    for db in my_cursor:
-        if(db[0]=="users"):
-            usersExist=True
-            print("Database already exists") 
-            
-    if(usersExist==False):
-        my_cursor.execute("CREATE DATABASE SQL_DB")
-        print("Database 'SQL_DB' created")
 
     print(db.get_tables_for_bind())
-    if request.method=='POST':
-        db.drop_all()
-        db.session.commit()
-        db.create_all()
-        db.session.commit()
+
     relays=Relay.query.all()
     print(relays)
     try:
         if(len(relays)==0):
             print("No relays")
-            db.session.add(Relay(id=1,state=False,DateTime=datetime.now(),name="relay1"))
-            db.session.add(Relay(id=2,state=False,DateTime=datetime.now(),name="relay2"))
-            db.session.add(Relay(id=3,state=False,DateTime=datetime.now(),name="relay3"))
-            db.session.add(Relay(id=4,state=False,DateTime=datetime.now(),name="relay4"))
-            db.session.add(Relay(id=5,state=False,DateTime=datetime.now(),name="relay5"))
-            db.session.add(Relay(id=6,state=False,DateTime=datetime.now(),name="relay6"))
-            db.session.add(Relay(id=7,state=False,DateTime=datetime.now(),name="relay7"))
-            db.session.add(Relay(id=8,state=False,DateTime=datetime.now(),name="relay8"))
-            db.session.add(Relay(id=9,state=False,DateTime=datetime.now(),name="relay9"))
-            db.session.add(Relay(id=10,state=False,DateTime=datetime.now(),name="relay10"))
-            db.session.add(Relay(id=11,state=False,DateTime=datetime.now(),name="relay11"))
-            db.session.add(Relay(id=12,state=False,DateTime=datetime.now(),name="relay12"))
+            db.session.add(Relay(id=1,name="relay1"))
+            db.session.add(Relay(id=2,name="relay2"))
+            db.session.add(Relay(id=3,name="relay3"))
+            db.session.add(Relay(id=4,name="relay4"))
+            db.session.add(Relay(id=5,name="relay5"))
+            db.session.add(Relay(id=6,name="relay6"))
+            db.session.add(Relay(id=7,name="relay7"))
+            db.session.add(Relay(id=8,name="relay8"))
+            db.session.add(Relay(id=9,name="relay9"))
+            db.session.add(Relay(id=10,name="relay10"))
+            db.session.add(Relay(id=11,name="relay11"))
+            db.session.add(Relay(id=12,name="relay12"))
             db.session.commit()
         
         roles=Roles.query.all()
@@ -285,9 +286,12 @@ def database():
     return render_template('databse.html',our_roles=roles,our_relays=relays,our_users=users)
 
 
+##---------------------------------------------------------------
+
+
 if __name__=="__main__":
     db.create_all()
-    app.run()
+    
     
 
     

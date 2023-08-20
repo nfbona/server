@@ -18,15 +18,15 @@ services:
             - 3306
         volumes:
             - ./MySql/init.sql:/data/application/init.sql
-            - ./data:/var/lib/mysql
-            - ./logs:/var/log/mysql
+            - ./MySql/data:/var/lib/mysql
+            - ./MySql/logs:/var/log/mysql
         networks:
             xarxa_interna:
                 ipv4_address: 172.22.0.11
         hostname: mysql
         
 
-    app_flask:
+    flask_app:
         tty: true
         container_name: flask_app
         depends_on: 
@@ -44,16 +44,6 @@ services:
         hostname: flask_app
         restart: always
         privileged: true #required for the gpio
-        
-    init_db:
-        command: ["sh", "-c", "sleep 3  && python ./init_db.py"]
-        depends_on: 
-            - app_flask
-        build:
-            context: .
-        networks:
-            xarxa_interna:
-                ipv4_address: 172.22.0.33
 
 networks:
     xarxa_interna:

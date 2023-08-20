@@ -9,7 +9,7 @@ from wtforms.validators import DataRequired,Email,EqualTo,Length
 class PasswordForm(FlaskForm):
         email=EmailField("Email",validators=[Email()])
         password_hash=PasswordField("Password",validators=[DataRequired(),EqualTo('passwordCheck',message='Passwords must match')])
-        passwordCheck=PasswordField("Confirm Password",validators=[DataRequired()])
+        password_check=PasswordField("Confirm Password",validators=[DataRequired()])
         submit = SubmitField('Submit')
         
 # Create to check in

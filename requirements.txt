@@ -11,3 +11,4 @@ cryptography==41.0.3
 gunicorn
 SQLAlchemy==2.0.19
 python-dotenv==0.19.1
+flask_script==2.0.6 

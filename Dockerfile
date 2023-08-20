@@ -15,10 +15,9 @@ COPY . .
 
 ENV FLASK_APP=app.py
 
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]
+CMD ["sh","-c","sleep 10 && gunicorn --bind 0.0.0.0:5000 wsgi:app --workers 1"]
 
-
-#,"--workers","1"]
+#,"","1"]
 
 
 
