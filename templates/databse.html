@@ -1,0 +1,77 @@
+
+{% extends "base/baseNavbar.html" %}
+{% block title %}  {% endblock %}
+{% block content %} 
+
+
+<div id="container" class="container-fluid" >
+  <div class="row">
+    <!---- LEFT COLUMN --->
+    <div id="left" class="col" >
+      <h1 style="display: flex;justify-content: center;">List of Users</h1>
+      <table class="table">
+        <thead>
+          <tr> 
+            <th>email</th>
+            <th>roles_id</th>
+          </tr>
+        </thead>
+        {% for our_user in our_users %}
+        <tr>
+        <td>{{our_user.email}}</td>
+        <td>{{our_user.role_id}}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+
+<!---- MIDLE COLUMN --->
+    <div id="midle" class="col" >
+      <h1 style="display: flex;justify-content: center;">List of Roles</h1>
+          
+      <table class="table">
+        <thead>
+          <tr>  
+            <th>Id</th>
+            <th>name</th>
+          </tr>
+        </thead>
+        {% for our_role in our_roles %}
+        <tr>
+          <td>{{our_role.id}}</td>
+          <td>{{our_role.name}}</td>
+        </tr>
+        {% endfor %}
+      </table>
+   
+
+      </div>
+<!---- Right COLUMN --->
+      <div id="right" class="col-8" >
+          <h1 style="display: flex;justify-content: center;">List of Relays</h1>
+          
+            <table class="table">
+              <thead>
+                <tr>  
+                  <th>Id</th>
+                  <th>state</th>
+                  <th>DateTime</th>
+                  <th>name</th>
+                </tr>
+              </thead>
+              {% for our_relay in our_relays %}
+              <tr>
+                <td>{{our_relay.id}}</td>
+                <td>{{our_relay.state}}</td>
+                <td>{{our_relay.date_modified}}</td>
+                <td>{{our_relay.name}}</td>
+              </tr>
+              {% endfor %}
+            </table>
+       </div>
+  </div>
+</div>
+
+
+</div>
+{% endblock %}
