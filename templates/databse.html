@@ -11,17 +11,15 @@
       <h1 style="display: flex;justify-content: center;">List of Users</h1>
       <table class="table">
         <thead>
-          <tr>  
-            <th>Id</th>
+          <tr> 
             <th>email</th>
             <th>roles_id</th>
           </tr>
         </thead>
         {% for our_user in our_users %}
         <tr>
-        <td>{{our_user.id}}</td>
         <td>{{our_user.email}}</td>
-        <td>{{our_user.roles_id}}</td>
+        <td>{{our_user.role_id}}</td>
         </tr>
         {% endfor %}
       </table>

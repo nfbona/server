@@ -28,18 +28,17 @@ from flask_migrate import Migrate
 
 
 def create_app(db):
-    app_name='MYAPPNAME'
     # Load environment variables
     load_dotenv()
     sql_uri=os.environ.get('SQL_URI')
-    crtf_key=os.environ.get('CRTF_KEY')
+    crsf_key=os.environ.get('CRSF_KEY')
     MIGRATION_DIR = os.path.join('Modules', 'migrations')
 
     print(sql_uri)
     # initiating Flask, bootstrap, CRTF key
     app = Flask(__name__)
-    app.config['SECRET_KEY'] = str(crtf_key)
-
+    app.config['SECRET_KEY'] = str(crsf_key)
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=5)  
 
     # mysql+pymysql://username:password@host/dbname
     app.config['SQLALCHEMY_DATABASE_URI'] = str(sql_uri)
@@ -51,42 +50,67 @@ def create_app(db):
     migrate = Migrate(app, db,directory=MIGRATION_DIR)
     return app
  
- 
-app=create_app(db)
+def user_login_out_of_time():
+    if current_user.is_authenticated:
+        if current_user.old_session():
+            return redirect(url_for('logout'))
+        else:
+            print('Not that old user')
+    else:
+        print('Not initiated')
+        
 
+app=create_app(db)
 # pw
 login_manager = LoginManager()
-login_manager.init_app(app)
 login_manager.login_view = 'login'
+
+login_manager.init_app(app)
 
  
 @login_manager.user_loader
-def load_user(user_id):
-    return Users.query.get(int(user_id)) 
+def load_user(user_email):
+    return Users.query.get(user_email)
  
 # Global variable
 TIMETOWAIT=10
+
 
 # the methods that the request can accept
 
 @app.route('/', methods=['POST', 'GET'])
 def login(): 
     
+    # Check lifetime user
+    user_login_out_of_time()
+    
+    email = None
+    password = None
+    form = LogInForm()
+    CheckUser=None
     if(current_user.is_authenticated):
         return redirect(url_for('switch'))
+
+    #Validate form
+    return render_template('Login.html',form=form)
+
+
+@app.route('/login', methods=['POST'])
+def loginPOST(): 
+    user_login_out_of_time()
     
     email = None
     password = None
     form = LogInForm()
     CheckUser=None
     
-    #Validate form
     if form.validate_on_submit():
         users = Users.query.filter_by(email=form.email.data).first()
         if users:
             print("hash: " + form.password_hash.data)
+            print("user password: " + users.password_hash)
+            print("password correct?: " + str(users.checkPass(form.password_hash.data)))
             if users.checkPass(form.password_hash.data):
-                session['user']=generate_password_hash(str(users.id))
                 login_user(users)
                 
                 flash('Correct username and password')
@@ -96,87 +120,98 @@ def login():
                 flash('Invalid username or password')
         else:
             flash('Invalid username or password')
-    return render_template('Login.html', email=email,form=form, password=password,CheckUser=CheckUser)
+    return redirect(url_for('switch'))
+
 
 @app.route('/logout',methods=['POST','GET'])
 @login_required
 def logout():
+    user_login_out_of_time()
     logout_user()
     return redirect('/')
 
 @app.route('/user/signup', methods=['POST','GET'])
 def signup():
-    email = None
-    password = None
+    user_login_out_of_time()
     form = PasswordForm()
-    our_users=Users.query.all()
-    #Validate form
+    our_users=Users.query.all()  
+ 
+    return render_template('SignUp.html', form=form, our_users=our_users)
+ 
+@app.route('/user/signupPOST', methods=['POST'])
+def signupPOST():
+    form = PasswordForm()
+    print("NOT VALUDATED FORM, ", form.validate_on_submit(),"NOT VALUDATED FORM, ", form.validate_on_submit(),', Errors: ',form.errors)
     if form.validate_on_submit():
-        print("Email: ",form.email.data)
-        print("Password: ",form.password_hash.data)
         user = Users.query.filter_by(email=form.email.data).first()
         print("users: ",user)
         if(user is None):
-            user = Users(email=form.email.data, password_hash= generate_password_hash(form.password_hash.data,"sha256"))
+            user = Users(email=form.email.data, password_hash= form.password_hash.data)
             print("user inserted: ",user)   
             db.session.add(user)
             db.session.commit()
-        email = form.email.data
-        print("user inserted: ",email)   
-        password = form.password_hash.data
-        print("user inserted: ",password)   
-        form.email.data = ''
-        form.password_hash.data=''
+        else:
+            flash('User already registered.')
+        user=None
+        form.email.data = None
+        form.password_hash.data=None
+
         our_users= Users.query.order_by(Users.date_added + timedelta(hours=2))
-        print("user inserted: ",our_users)   
-    return render_template('SignUp.html', email=email, form=form, password=password, our_users=our_users)
+        print("user inserted: ",our_users)  
+    return redirect(url_for('signup'))
  
-@app.route('/user/update/<int:id>', methods=['POST','GET'])
-def update(id):
-    if(current_user.id == id or current_user.roles_id ==1):
-        email = None
-        password = None
+ 
+@app.route('/user/update/<string:email>', methods=['POST','GET'])
+def update(email):
+    user_login_out_of_time()
+    if(current_user.email == email or current_user.role_id ==1):
         form = PasswordForm()
-        name_update=Users.query.get_or_404(id)
+        name_update= Users.query.filter_by(email=email).first()
         #Validate form
         if form.validate_on_submit():
-            name_update.password_hash=generate_password_hash(form.password_hash.data,"sha256")
+            # if 
+            name_update.set_password(form.password_hash.data)
             db.session.commit()
             form.email.data = ''
             form.password_hash.data = ''
-            flash("User modified successfully!")
-        return render_template('UpdateUser.html', email=email, form=form, password=password,our_user=name_update)
-    flash("Not valid :S")
+            flash("User updated successfully.")
+        return render_template('UpdateUser.html', form=form,our_user=name_update)
+    flash("Not valid operation.")
     return redirect(url_for('signup'))
     
-@app.route('/user/delete/<int:id>', methods=['POST','GET'])
+@app.route('/user/delete/<string:email>', methods=['POST','GET'])
 @login_required
-def delete(id):
-    email = None
-    password = None
-    form = PasswordForm()
-    name_update=Users.query.get_or_404(id)
-    #Validate form
-    try:			
-        db.session.delete(name_update)
-        db.session.commit()
-        flash("User deleted successfully!")
-        name_update.email = request.form['email']
-        name_update.password = request.form['password']
-        db.session.commit()
-        form.email.data = ''
-        form.password_hash.data=''
-        password=name_update.password_hash
-        our_users= Users.query.order_by(Users.date_added + timedelta(hours=2))
-        return render_template('UserList.html', email=email, form=form, password=password, our_users=our_users)
-    except:
-        our_users= Users.query.order_by(Users.date_added + timedelta(hours=2))
-        return render_template('UserList.html', email=email, form=form, password=password,our_users=our_users)
-     
+def delete(email):
+    user_login_out_of_time()
+    if(current_user.email == email or current_user.role_id ==1):
+        form = PasswordForm()
+        name_update=Users.query.get_or_404(email)
+        #Validate form
+        try:			
+
+            flash("User deleted successfully.")
+            name_update.email = request.form['email']
+            name_update.password = request.form['password']
+            form.email.data = ''
+            form.password_hash.data=''
+            flash("User deleted successfully: ",current_user.email,", form: ",request.form['email'])
+            if(current_user.email == request.form['email']):
+                logout_user()
+                db.session.delete(name_update)
+                db.session.commit()
+                return redirect(url_for('login'))
+            else:
+                db.session.delete(name_update)
+                db.session.commit()
+        except:
+            return redirect(url_for('signup'))
+    flash("Not valid operation.")
+    return redirect(url_for('signup'))
 #Switch
 @app.route('/switch', methods=['POST','GET'])
 @login_required
 def switch():
+    user_login_out_of_time()
     return render_template('Switch.html')
 
 
@@ -191,6 +226,7 @@ def a1():
 @app.route('/user', methods=['POST','GET'])
 @login_required
 def user():
+    user_login_out_of_time()
     email = None
     form = UserField()
     #Validate form
@@ -202,6 +238,7 @@ def user():
 @app.route('/json', methods=['POST','GET'])
 @login_required
 def json():
+    user_login_out_of_time()
     if request.method == 'POST':  #this block is only entered when the form is submitted
         rely=Relay.query.filter_by(_id=request.json['id']).first()
         print('IF: ',(datetime.now()-timedelta(seconds=TIMETOWAIT)) > rely._DateTime,', Delta time: ',rely._DateTime, ', Datetime to pass:',datetime.now()-timedelta(seconds=TIMETOWAIT))
@@ -230,12 +267,15 @@ def json():
 @app.route('/history', methods=['POST','GET'])
 @login_required
 def history():
-  return render_template('History.html')
+    user_login_out_of_time()
+    return render_template('History.html')
 
 @app.route('/configuration', methods=['POST','GET'])
 @login_required
 def configuration():
-  return render_template('Configuration.html')
+    user_login_out_of_time()
+    current_user.email
+    return render_template('Configuration.html', userEmail=current_user.email)
 
 @app.errorhandler(404)
 def error400(e):
@@ -243,7 +283,7 @@ def error400(e):
 
 @login_manager.unauthorized_handler
 def unauthorized_callback():
-    return redirect('error/404.html')
+    return redirect(url_for('login'))
 
 @app.errorhandler(500)
 def error500(e):
@@ -257,31 +297,9 @@ def database():
 
     relays=Relay.query.all()
     print(relays)
-    try:
-        if(len(relays)==0):
-            print("No relays")
-            db.session.add(Relay(id=1,name="relay1"))
-            db.session.add(Relay(id=2,name="relay2"))
-            db.session.add(Relay(id=3,name="relay3"))
-            db.session.add(Relay(id=4,name="relay4"))
-            db.session.add(Relay(id=5,name="relay5"))
-            db.session.add(Relay(id=6,name="relay6"))
-            db.session.add(Relay(id=7,name="relay7"))
-            db.session.add(Relay(id=8,name="relay8"))
-            db.session.add(Relay(id=9,name="relay9"))
-            db.session.add(Relay(id=10,name="relay10"))
-            db.session.add(Relay(id=11,name="relay11"))
-            db.session.add(Relay(id=12,name="relay12"))
-            db.session.commit()
-        
-        roles=Roles.query.all()
-        print(roles)
-        if(len(roles)==0):
-            db.session.add(Roles(id=1,name='Admin'))
-            db.session.add(Roles(id=2,name='User'))
-            db.session.commit()
-    except:    
-        db.create_all()
+ 
+    roles=Roles.query.all()
+     
     users=Users.query.all()
     return render_template('databse.html',our_roles=roles,our_relays=relays,our_users=users)
 
