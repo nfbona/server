@@ -1,9 +1,10 @@
 CREATE DATABASE IF NOT EXISTS mysql;
 
+
 USE mysql;
 
 CREATE TABLE if not exists roles (
-    id INT,
+    id INT AUTO_INCREMENT,
     date_added DATETIME, 
     name VARCHAR(100) NOT NULL UNIQUE,
     PRIMARY KEY (id)
@@ -11,28 +12,29 @@ CREATE TABLE if not exists roles (
 
 CREATE TABLE if not exists users (
     email VARCHAR(100), 
+    color VARCHAR(20),
     date_added DATETIME, 
     last_login DATETIME, 
     password_hash VARCHAR(128) NOT NULL, 
     role_id INT NOT NULL,
-    PRIMARY KEY (email),
+    PRIMARY KEY(email),
     FOREIGN KEY(role_id) REFERENCES roles(id)
     );
 
 CREATE TABLE if not exists relays (
-    id INT NOT NULL, 
+    id INT AUTO_INCREMENT, 
     state INT, 
     date_modified DATETIME, 
     name VARCHAR(100) NOT NULL,
-    PRIMARY KEY (id)
+    PRIMARY KEY(id)
     );
 
 CREATE TABLE if not exists schedule (
-    email VARCHAR(100), 
+    user_email VARCHAR(100), 
     start_time DATETIME, 
     end_time DATETIME, 
-    FOREIGN KEY(email) REFERENCES users(email),
-    PRIMARY KEY (email,start_time)
+    FOREIGN KEY(user_email) REFERENCES users(email),
+    PRIMARY KEY(user_email,start_time)
     );
 
 
@@ -44,8 +46,8 @@ ON DUPLICATE KEY UPDATE
     id = VALUES(id);
 
 
-INSERT INTO users (email ,date_added ,last_login, password_hash,  role_id)
-    VALUES ('admin@admin.admin', NOW(),NOW() ,'sha256$39uHUtGQLHwB6IRS$75457a9fe742bc2852fce204f1b8fba7a91a678a05efe2a9e723cf52f9a99d30',1)
+INSERT INTO users (email ,date_added ,last_login, password_hash,  role_id,color)
+    VALUES ('admin@admin.admin', NOW(),NOW() ,'sha256$39uHUtGQLHwB6IRS$75457a9fe742bc2852fce204f1b8fba7a91a678a05efe2a9e723cf52f9a99d30',1,'176,176,0')
 ON DUPLICATE KEY UPDATE
     email = VALUES(email);
 
@@ -61,6 +63,8 @@ VALUES
     ( 8, 0, NOW(), 'Relay8')
 ON DUPLICATE KEY UPDATE
     id = VALUES(id);
+
+
     
 
 

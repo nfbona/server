@@ -3,109 +3,152 @@
 {% block title %}  {% endblock %}
 {% block content %} 
 
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+<script src='fullcalendar/core/locales/ca.global.js'></script>
+<!--
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css">
+-->
+
+<style>
+  #calendar a {
+  font-size: 1vw;
+  font-weight: bold;
+  }
+</style>
+
+
+<script>
+
+  document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+      
+
+      //Aspect ratio
+      aspectRatio: 1.5,
+
+      // en catala
+      locale: 'ca',
+      
+      // See operations and healthchecks of the schedule
+      weekends:true,
+      firstDay:1,
+      allDaySlot:false,
+      dayHeaderFormat:{ weekday: 'long' },
+      nowIndicator:true,
+
+      // SELECTABLE
+      selectable: true,
+      selectMirror:true,
+      unselectAuto:true,
+      selectOverlap:false,
+      stickyHeaderDates:true,
+      eventOverlap:false,
+      //TO BE TESTED
+
+      themeSystem: 'bootstrap5',
+      dayMaxEvents: true,
+      headerToolbar: {
+        left: 'prev,next today',
+        center: 'title',
+        right: 'timeGridWeek,listWeek'
+      },
+      select: function(info) {
+        if (confirm("Estàs segur que vols fer un booking d'aquestes hores? Start"+info.startStr+' end:'+info.endStr)) {
+          
+        } else {
+
+        }
+      },
+      events:
+        [
+        {% for event in all_events %}
+          {
+            groupId: "{{event.groupId}}",
+            title: "{{event.title}}" , 
+            start:"{{event.start}}", 
+            end:"{{event.end}}",
+            editable:{{event.editable}},
+            backgroundColor:'rgb({{event.color}})',
+          },
+          {%endfor%}
+        ],
+        
+        eventChange: function(info){
+          alert('TItle: '+ info.event.title+', Start: '+info.event.start+', End: '+info.event.end)
+        },
+        eventClick: function(info){
+          alert('TItle: '+ info.event.title+', Start: '+info.event.start+', End: '+info.event.end)
+        },/*
+        eventDrop :function(info){
+          alert('TItle: '+ info.event.title+', Start: '+info.event.start+', End: '+info.event.end)
+        },*/
+        select: function(selectionInfo) {
+          if (confirm("Estàs segur que vols fer un booking d'aquestes hores? Start"+selectionInfo.startStr+' end:'+selectionInfo.endStr)) {
+            var newEvent = {
+              title: '{{current_user.email}}',
+              start: selectionInfo.start,
+              end: selectionInfo.end,
+              backgroundColor:'rgb({{current_user.color}})',
+              editable: true,
+              groupId:'{{current_user.email}}'
+            };
+          } else {
+  
+          }
+          // You can create a new event here using start and end times
+
+          
+          // Add the new event to the calendar
+          calendar.addEvent(newEvent);
+        },
+    
+
+      initialView: 'timeGridWeek'
+    });
+    calendar.render();
+  });
+
+</script>
+
+
+  
+      <div class="container-fluid"  >
+          <h1 style="display: flex;justify-content: center;">Schedule</h1>
+          <div class="row text-center" >
+            
+            <div class="col-9">
+              <div id="calendar" > </div>
+            </div>
+            <div class="col-3">
+              <div id="userConfig" style="margin-bottom:1em;height:350px;overflow:auto;padding:1em;"> 
+                <h2 class="text-center">User information</h2>
+                <div id="llistaEvents">
+                  
+                  <div>
+                    <span>"User email: {{current_user.email}}"</span>
+
+                  </div>
+                  <div>
+                    <span>"Hours restants: {{hours}}"</span>
+
+                  </div>
+                  
 
 
 
-<div id="container" class="container-fluid" >
-  <div class="row">
-    <div id="left" class="col" >
+                </div>
+            </div>
 
-          <div id="left-form" >
-              <h1><strong>POST</strong> with password</h1>
-              <p></p>
-
-              <form action="/user/signupPOST" method="POST">
-                <!-- CRSF token -->
-                {{ form.hidden_tag() }}
-                
-                <!--FORMS-->
-                <!--Email-->
-                {{ form.email.label(class="form-label")}}
-                {{ form.email(class="form-control", placeholder="name@example.com")}}
-                <!-- -->
-
-                <!--Password-->
-                {{ form.password_hash.label(class="form-label")}}   
-                {{ form.password_hash(class="form-control",  placeholder="Password")}}   
-                <!---->
-                
-
-                 <!--Password-->
-                 {{ form.password_check.label(class="form-label")}}   
-                 {{ form.password_check(class="form-control",  placeholder="Password")}}   
-                 <!---->
-                
-                <br/>
-                <!--Button-->
-                {{form.submit( class="btn btn-info")}}
-                
-              </form>
 
 
           </div>
-          <div id="urvlogo">
-            <a href="https://campusvirtual.urv.cat/local/alternatelogin/index.php"> <img src="{{ url_for('static',filename='style/images/logoURVppd.png') }}">
-            </a>
-          </div>
-      </div>
-
-     
-      <div id="right" class="col-8" >
-          <h1 style="display: flex;justify-content: center;">List of Users</h1>
-          <div id="right-image" style="height: 100%;">
-          
-          
-          
-            <table class="table">
-              <thead>
-                <tr>  
-                  <th>Email</th>
-                  <th>Password</th>
-                  <th>Role</th>
-                  <th>Active</th>
-                  <th>Date added</th>
-                </tr>
-              </thead>
-              {% for our_user in our_users %}
-              <tr>
-                <td>{{our_user.email}}</td>
-                <td><a class="btn btn-primary" href="{{url_for('update',email=our_user.email)}}"> {{our_user.password_hash}} </a> </td>
-                <td>{{our_user.roles_id}}</td>
-                <td><a class="btn btn-danger" href="{{url_for('delete',email=our_user.email)}}">Delete</td>
-                <td>{{our_user.active}}</td>
-                <td>{{our_user.date_added}}</td>
-              </tr>
-              {% endfor %}
-            </table>
 
 
-
-            <div id="messages">
-              {%for message in get_flashed_messages()%}
-                {%if message == "User modified successfully!"%}
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                  {{message}}
-                  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div> 
-                {%else%}
-                {%if message == "User deleted successfully!"%}
-                <div class="alert alert-primary alert-dismissible fade show" role="alert">
-                  {{message}}
-                  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div> 
-                {%else%}
-                <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                  {{message}}
-                  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>              
-                {%endif%}
-                {%endif%}
-                {%endfor%}
-
-          </div>
-      </div>
+           
   </div>
-</div>
+
 
 
 </div>

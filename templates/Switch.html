@@ -17,71 +17,19 @@
               </th>
             </tr>
 
+
+            {% for relay in relays %}
             <tr>
               <td>
-              <p style="display:inline;">  <input id="checkbox1" type="checkbox" value="1" onclick="disable" >
-                Router 1 
+              <p style="display:inline;">  <input id="checkbox{{relay.id}}" type="checkbox" value="1" onclick="disable" >
+                {{relay.name}} 
               </p>
               </td>
               <td>
-                <p style="display:inline;" id="timer1"></p>
+                <p style="display:inline;" id="timer{{relay.id}}"></p>
               </td>
             </tr>
-            
-            <tr>
-              <td>
-              <p style="display:inline;">  <input id="checkbox2" type="checkbox" value="2" >
-                Router 2 
-              </p>
-              </td>
-              <td>
-                <p style="display:inline;" id="timer2"></p>
-              </td>
-            </tr>
-            
-            <tr>
-              <td>
-              <p style="display:inline;">  <input id="checkbox3" type="checkbox" value="3" >
-                Router 3 
-              </p>
-              </td>
-              <td>
-                <p style="display:inline;" id="timer3"></p>
-              </td>
-            </tr>
-            
-            <tr>
-              <td>
-              <p style="display:inline;">  <input id="checkbox4" type="checkbox" value="4" >
-                Router 4 
-              </p>
-              </td>
-              <td>
-                <p style="display:inline;" id="timer4"></p>
-              </td>
-            </tr>
-            
-            <tr>
-              <td>
-              <p style="display:inline;">  <input id="checkbox5" type="checkbox" value="5" >
-                Router 5 
-              </p>
-              </td>
-              <td>
-                <p style="display:inline;" id="timer5"></p>
-              </td>
-            </tr>
-            
-            <tr>
-              <td>
-              <p style="display:inline;">  <input id="checkbox6" type="checkbox" value="6" >
-                Router 6
-              </p>
-              </td>
-              <td>
-                <p style="display:inline;" id="timer6"></p>
-              </td>
-            </tr>
+            {% endfor%}
             
             
           </div>

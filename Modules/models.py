@@ -2,6 +2,8 @@
 from flask_login import UserMixin
 from datetime import datetime,timedelta
 from flask_sqlalchemy import SQLAlchemy
+import random
+
 
 db = SQLAlchemy()
 #import to password hashing
@@ -19,6 +21,7 @@ class Users(db.Model, UserMixin):
     
     # One to one relationship must have a role
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'),nullable=False,default=2)
+    color = db.Column(db.String(20))
     
     # create a string
     def __repr__(self):
@@ -35,6 +38,9 @@ class Users(db.Model, UserMixin):
         self.password_hash=generate_password_hash(password_hash,"sha256")
         self.date_modified=datetime.now()
         self.last_login=datetime.now()
+        color=str(random.randint(0, 176))+','+str(random.randint(0, 176))+','+str(random.randint(0, 176))
+        print(color)
+        self.color=color
         
     def update_last_login(self):
         self.last_login=datetime.now()
@@ -82,11 +88,11 @@ class Relay(db.Model, UserMixin):
 
 class Schedule(db.Model, UserMixin):
     __tablename__ = 'schedule'
-    user = db.Column(db.String(100), db.ForeignKey('users.email'),primary_key=True)
+    user_email = db.Column(db.String(100), db.ForeignKey('users.email'),primary_key=True)
     start_time = db.Column(db.DateTime,primary_key=True)
     end_time = db.Column(db.DateTime)
         
-    def __init__(self,email,start_time):
+    def __init__(self,email,start_time,end_time):
         self.start_time=start_time
-        self.user=email
-        self.end_time = start_time + timedelta(hours=1)
+        self.user_email=email
+        self.end_time = end_time
