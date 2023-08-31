@@ -21,7 +21,7 @@
             {% for relay in relays %}
             <tr>
               <td>
-              <p style="display:inline;">  <input id="checkbox{{relay.id}}" type="checkbox" value="1" onclick="disable" >
+              <p style="display:inline;">  <input id="checkbox{{relay.id}}" type="checkbox" value="{{relay.id}}" onclick="disable" >
                 {{relay.name}} 
               </p>
               </td>

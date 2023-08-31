@@ -55,7 +55,8 @@ def user_login_out_of_time():
         if current_user.old_session():
             return redirect(url_for('logout'))
         else:
-            redirect(url_for('logout'))
+            print('correct user')
+            current_user.update_last_login()
     else:
         print('Not initiated')
         
@@ -251,7 +252,7 @@ def schedule():
     
     if current_user.role_id==2:
         for event in events_from_user:
-            print(event.start_time,' , ',event.end_time)
+
             time=(event.end_time-event.start_time).total_seconds() / 3600
 
             max_hours=max_hours-time

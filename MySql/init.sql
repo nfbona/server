@@ -1,6 +1,5 @@
 CREATE DATABASE IF NOT EXISTS mysql;
 
-
 USE mysql;
 
 CREATE TABLE if not exists roles (

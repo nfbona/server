@@ -12,11 +12,7 @@ services:
         environment:
             MYSQL_ROOT_PASSWORD: ${DATABASE_PASSWORD}
             MYSQL_DATABASE: mysql
-        ports:
-            - 3306:3306
         command: --init-file /data/application/init.sql
-        expose:
-            - 3306
         volumes:
             - ./MySql/init.sql:/data/application/init.sql
             - ./MySql/data:/var/lib/mysql
