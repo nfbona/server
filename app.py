@@ -12,6 +12,7 @@ from werkzeug.security import generate_password_hash
 # User Login
 from flask_login import LoginManager,login_user,login_required,logout_user,current_user
 
+
 import random
 # ----------REQUEST COOKIE -----------
 """
@@ -39,7 +40,11 @@ def create_app(db):
     # initiating Flask, bootstrap, CRTF key
     app = Flask(__name__)
     app.config['SECRET_KEY'] = str(crsf_key) 
-
+    
+    # Session
+    app.config['SESSION_TYPE'] = 'sqlalchemy'
+    app.config['SESSION_USE_SIGNER'] = True
+    
     # mysql+pymysql://username:password@host/dbname
     app.config['SQLALCHEMY_DATABASE_URI'] = str(sql_uri)
     # push configuration
@@ -50,15 +55,17 @@ def create_app(db):
     migrate = Migrate(app, db,directory=MIGRATION_DIR)
     return app
  
-def user_login_out_of_time():
+def user_login_out_of_time(current_user):
     if current_user.is_authenticated:
         if current_user.old_session():
-            return redirect(url_for('logout'))
+            print('User: ',current_user.old_session(),', TimeNOw-LastLogin: ',datetime.now() - current_user.last_login , ', Timedelta24h: ', timedelta(hours=24))
+            return True
         else:
             print('correct user')
-            current_user.update_last_login()
+            return False
     else:
         print('Not initiated')
+        return False
         
         
 # get all existing events
@@ -91,8 +98,10 @@ login_manager.init_app(app)
 def load_user(user_email):
     try:
         name_update=Users.query.get(user_email)
+        current_user=session['user']
         return name_update
     except:
+        print(user_email)
         redirect(url_for('logout'))
 
  
@@ -106,7 +115,7 @@ TIMETOWAIT=10
 def login(): 
     
     # Check lifetime user
-    user_login_out_of_time()
+
     form = LogInForm()
     if(current_user.is_authenticated):
         
@@ -118,8 +127,7 @@ def login():
 
 @app.route('/login', methods=['POST'])
 def loginPOST(): 
-    user_login_out_of_time()
-    
+   
     email = None
     password = None
     form = LogInForm()
@@ -130,7 +138,9 @@ def loginPOST():
         if users:
             if users.checkPass(form.password_hash.data):
                 login_user(users)
-                flash('Correct username and password')
+                session['user']=form.email.data
+                current_user.update_last_login()
+                db.session.commit()
                 return redirect(url_for('switch'))
         # clear data from form
             else:
@@ -143,13 +153,15 @@ def loginPOST():
 @app.route('/logout',methods=['POST','GET'])
 @login_required
 def logout():
-    user_login_out_of_time()
     logout_user()
+    session.pop('user',None)
+    current_user=None
     return redirect('/')
 
 @app.route('/user/signup', methods=['POST','GET'])
 def signup():
-    user_login_out_of_time()
+    if(user_login_out_of_time(current_user)):
+        return redirect(url_for('logout'))
     form = PasswordForm()
     our_users=Users.query.all()
  
@@ -158,7 +170,6 @@ def signup():
 @app.route('/user/signupPOST', methods=['POST'])
 def signupPOST():
     form = PasswordForm()
-    print("NOT VALUDATED FORM, ", form.validate_on_submit(),"NOT VALUDATED FORM, ", form.validate_on_submit(),', Errors: ',form.errors)
     if form.validate_on_submit():
         user = Users.query.filter_by(email=form.email.data).first()
         print("users: ",user)
@@ -167,6 +178,7 @@ def signupPOST():
             print("user inserted: ",user)   
             db.session.add(user)
             db.session.commit()
+            flash('User')
         else:
             flash('User already registered.')
         user=None
@@ -180,7 +192,8 @@ def signupPOST():
  
 @app.route('/user/update/<string:email>', methods=['GET'])
 def update(email):
-    user_login_out_of_time()
+    if(user_login_out_of_time(current_user)):
+        return redirect(url_for('logout'))
     if(current_user.email == email or current_user.role_id ==1):
         form = PasswordForm()
         name_update= Users.query.filter_by(email=email).first()
@@ -191,7 +204,8 @@ def update(email):
     
 @app.route('/user/updatePOST/<string:email>', methods=['POST'])
 def updatePOST(email):
-    user_login_out_of_time()
+    if(user_login_out_of_time(current_user)):
+        return redirect(url_for('logout'))
     email=str(email)
     if(current_user.email == email or current_user.role_id ==1):
         form = PasswordForm()
@@ -203,25 +217,26 @@ def updatePOST(email):
             db.session.commit()
             form.email.data = ''
             form.password_hash.data = ''
-            flash("User updated successfully.")
+            flash("Usuari modificat satisfactoriament.")
+        
     return redirect(url_for('update',email=email))
 
 @app.route('/user/delete/<string:email>', methods=['POST'])
 @login_required
 def delete(email):
-    user_login_out_of_time()
+    if(user_login_out_of_time(current_user)):
+        return redirect(url_for('logout'))
     email=str(email)
     if(current_user.email == email or current_user.role_id ==1):
         name_update=Users.query.get_or_404(email)
         #Validate form
-        print('Email: ',name_update.email)
+        flash('Usuari deletejat satisfactoriament.')
         try:			
             if(current_user.email == name_update.email):
                 print('SAME EMAIL AS USER')
                 db.session.delete(name_update)
                 db.session.commit()
-                logout_user()
-                return redirect(url_for('login'))
+                return redirect(url_for('logout'))
             else:
                 print('OTHER EMAIL')
                 db.session.delete(name_update)
@@ -230,14 +245,14 @@ def delete(email):
         except:
             print('EXCEPT')
             return redirect(url_for('signup'))
-    print('current as email?',current_user.email == email,' ,Admin?',current_user.role_id ==1)
-    flash("Not valid operation.")
+    flash("Operació no valida.")
     return redirect(url_for('signup'))
 #Switch
 @app.route('/switch', methods=['GET'])
 @login_required
 def switch():
-    user_login_out_of_time()
+    if(user_login_out_of_time(current_user)):
+        return redirect(url_for('logout'))
     relays=Relay.query.order_by(Relay.id).all()
     return render_template('Switch.html',relays=relays)
 
@@ -245,7 +260,8 @@ def switch():
 @app.route('/schedule', methods=['GET'])
 @login_required
 def schedule():
-    user_login_out_of_time()
+    if(user_login_out_of_time(current_user)):
+        return redirect(url_for('logout'))
     modified_list= get_events(current_user)
     events_from_user=Schedule.query.filter_by(user_email=current_user.email)
     max_hours=3
@@ -263,7 +279,8 @@ def schedule():
 @app.route('/schedule/all_events', methods=['PULL'])
 @login_required
 def all_events():
-    user_login_out_of_time()
+    if(user_login_out_of_time(current_user)):
+        return redirect(url_for('logout'))
     modified_list= get_events()
     print(modified_list)
     return(modified_list)
@@ -273,7 +290,8 @@ def all_events():
 @app.route('/user', methods=['POST','GET'])
 @login_required
 def user():
-    user_login_out_of_time()
+    if(user_login_out_of_time(current_user)):
+        return redirect(url_for('logout'))
     email = None
     form = UserField()
     #Validate form
@@ -285,7 +303,8 @@ def user():
 @app.route('/json', methods=['POST'])
 @login_required
 def json():
-    user_login_out_of_time()
+    if(user_login_out_of_time(current_user)):
+        return redirect(url_for('logout'))
     if request.method == 'POST':  #this block is only entered when the form is submitted
         rely=Relay.query.filter_by(id=request.json['id']).first()
         print('IF: ',(datetime.now()-timedelta(seconds=TIMETOWAIT)) > rely.date_modified,', Delta time: ',rely.date_modified, ', Datetime to pass:',datetime.now()-timedelta(seconds=TIMETOWAIT))
@@ -311,13 +330,15 @@ def json():
 @app.route('/history', methods=['POST','GET'])
 @login_required
 def history():
-    user_login_out_of_time()
+    if(user_login_out_of_time(current_user)):
+        return redirect(url_for('logout'))
     return render_template('History.html')
 
 @app.route('/configuration', methods=['POST','GET'])
 @login_required
 def configuration():
-    user_login_out_of_time()
+    if(user_login_out_of_time(current_user)):
+        return redirect(url_for('logout'))
     current_user.email
     return render_template('Configuration.html', userEmail=current_user.email)
 

@@ -47,6 +47,35 @@
             <a href="https://campusvirtual.urv.cat/local/alternatelogin/index.php"> <img src="{{ url_for('static',filename='style/images/logoURVppd.png') }}">
             </a>
           </div>
+          <div id="messages">
+            {%for message in get_flashed_messages()%}
+              {%if message == "Usuari modificat satisfactoriament." or message == "Usuari deletejat satisfactoriament." or message == "Usuari creat satisfactoriament."%}
+              <div class="alert alert-success alert-dismissible fade show" role="alert">
+                {{message}}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>               
+              </div> 
+              {%else%}
+              {%if message == "Operació no valida."%}
+              <div class="alert alert-primary alert-dismissible fade show" role="alert">
+                {{message}}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>              
+              </div> 
+              {%else%}
+              <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                {{message}}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>               
+              </div>              
+              {%endif%}
+              {%endif%}
+              {%endfor%}
+
+          </div>
       </div>
 
      
@@ -63,46 +92,23 @@
                   <th>Password</th>
                   <th>Role</th>
                   <th>Active</th>
-                  <th>Date added</th>
+                  <th>Last Login</th>
                 </tr>
               </thead>
               {% for our_user in our_users %}
               <tr>
                 <td>{{our_user.email}}</td>
-                <td><a class="btn btn-primary" href="{{url_for('update',email=our_user.email)}}"> {{our_user.password_hash}} </a> </td>
-                <td>{{our_user.roles_id}}</td>
-                <td><a class="btn btn-danger" href="{{url_for('delete',email=our_user.email)}}">Delete</td>
-                <td>{{our_user.active}}</td>
-                <td>{{our_user.date_added}}</td>
+                <td><a class="btn btn-primary" href="{{url_for('update',email=our_user.email)}}"> Update </a> </td>
+                <td>{{our_user.role_id}}</td>
+                <td><form action="{{url_for('delete',email=our_user.email)}}" method="post"><button type="submit" class="btn btn-danger">Delete</button></form></td>
+                <td>{{our_user.last_login}}</td>
               </tr>
               {% endfor %}
             </table>
 
 
 
-            <div id="messages">
-              {%for message in get_flashed_messages()%}
-                {%if message == "User modified successfully!"%}
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                  {{message}}
-                  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div> 
-                {%else%}
-                {%if message == "User deleted successfully!"%}
-                <div class="alert alert-primary alert-dismissible fade show" role="alert">
-                  {{message}}
-                  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div> 
-                {%else%}
-                <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                  {{message}}
-                  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>              
-                {%endif%}
-                {%endif%}
-                {%endfor%}
 
-          </div>
       </div>
   </div>
 </div>

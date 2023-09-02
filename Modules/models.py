@@ -46,7 +46,7 @@ class Users(db.Model, UserMixin):
         self.last_login=datetime.now()
     
     def old_session(self):
-        if datetime.now() - self.last_login  > timedelta(seconds=24):
+        if datetime.now() - self.last_login  > timedelta(hours=24):
             return True
         return False
         
