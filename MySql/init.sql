@@ -36,6 +36,18 @@ CREATE TABLE if not exists schedule (
     PRIMARY KEY(user_email,start_time)
     );
 
+CREATE TABLE if not exists sessions (
+    user_email VARCHAR(100), 
+    date_created DATETIME NOT NULL, 
+    date_expiry DATETIME NOT NULL, 
+    FOREIGN KEY(user_email) REFERENCES users(email),
+    PRIMARY KEY(user_email)
+    );
+
+
+
+
+
 
 INSERT INTO roles (id, date_added, name)
 VALUES 
