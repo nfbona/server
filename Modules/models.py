@@ -9,7 +9,36 @@ db = SQLAlchemy()
 #import to password hashing
 from werkzeug.security import generate_password_hash,check_password_hash
 
+
 #Model
+class Sessions(db.Model,UserMixin):
+    __tablename__ = 'sessions'
+
+    user_email = db.Column(db.String(100), db.ForeignKey('users.email'),primary_key=True)
+    date_created = db.Column(db.DateTime, nullable=False)
+    date_expiry = db.Column(db.DateTime, nullable=False)
+
+    def __init__(self,email):
+        self.user_email=email
+        self.date_created=datetime.now()
+        self.date_expiry=datetime.now() + timedelta(hours=24)
+        
+    def isExpired(self):
+        if(self.date_expiry < datetime.now()):
+            return True
+        else:
+            return False
+    
+    def alreadyExisting(self,email):
+        len = len(Sessions.query.filter_by(user_email = email))
+        if len!=0:
+            return True
+        else: 
+            return False
+        
+    def set_date_expiry(self):
+        self.date_expiry=datetime.now() + timedelta(hours=24)
+        
 class Users(db.Model, UserMixin):
     __tablename__ = 'users'
     email = db.Column(db.String(100), primary_key=True)
@@ -46,7 +75,7 @@ class Users(db.Model, UserMixin):
         self.last_login=datetime.now()
     
     def old_session(self):
-        if datetime.now() - self.last_login  > timedelta(seconds=24):
+        if datetime.now() - self.last_login  > timedelta(hours=24):
             return True
         return False
         
