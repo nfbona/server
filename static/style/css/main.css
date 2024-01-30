@@ -47,46 +47,6 @@ header
   
 
 
-@media (max-width: 992px) {
-    .navbar{
-        height: 4.75em;
-        padding-top: 0%;
-        padding-left: 0.85em;
-    }
-  
-    .navbar-brand img{
-      padding: 1.5%;
-      height: 4.5vw;
-    }
-
-    .navbar .container{
-      margin:0;
-    }
-}
-
-@media (min-width: 992px) {
-  #navbarLogo{
-    margin-right: 15vw;
-  }
-
-  .navbar-brand img{
-    height: 4.5vw;
-  }
-
-  .navbar{
-    height: 10%;
-    padding: 1.5%;
-    
-  }
-
-  .navbar .container{
-    margin:0;
-    width: 100vw;
-    max-width: 100vw;
-    padding: 0.5vw;
-  }
-}
-
 
 
 

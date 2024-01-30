@@ -264,7 +264,7 @@ def schedule():
 def all_events():
     user_login_out_of_time()
     modified_list= get_events()
-    print(modified_list)
+    print(current_user)
     return(modified_list)
 
 
@@ -284,7 +284,8 @@ def user():
 @app.route('/json', methods=['POST'])
 @login_required
 def json():
-    user_login_out_of_time()
+    print(current_user)
+
     if request.method == 'POST':  #this block is only entered when the form is submitted
         rely=Relay.query.filter_by(id=request.json['id']).first()
         print('IF: ',(datetime.now()-timedelta(seconds=TIMETOWAIT)) > rely.date_modified,', Delta time: ',rely.date_modified, ', Datetime to pass:',datetime.now()-timedelta(seconds=TIMETOWAIT))
