@@ -1,21 +1,27 @@
 FROM resin/rpi-raspbian:latest
 FROM python:3.9-slim-buster
 
+# copy all necessary files into workdirectory
+COPY ./static /app/static
+COPY ./Modules /app/Modules
+COPY ./templates /app/templates
+COPY ./website /app/website
+COPY ./.env /app/.env
+COPY ./app.py /app/app.py
+COPY ./wsgi.py /app/wsgi.py
+COPY ./requirements.txt /app/requirements.txt
+
 WORKDIR /app
 
-COPY ./requirements.txt /app
 
 RUN pip3 install Flask
 RUN pip install -r requirements.txt
 RUN apt update
 RUN apt install python3-pip -y
 
-
-COPY . .
-
 ENV FLASK_APP=app.py
 
-CMD ["sh","-c","sleep 20 && gunicorn --bind 0.0.0.0:80 wsgi:app --workers 2 --worker-class=sync"]
+CMD ["sh","-c","sleep 0 && gunicorn --bind 0.0.0.0:80 wsgi:app --workers 1 --threads 1 --worker-class=sync"]
 
 #,"","1"]
 

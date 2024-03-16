@@ -16,8 +16,10 @@ CREATE TABLE if not exists users (
     last_login DATETIME, 
     password_hash VARCHAR(128) NOT NULL, 
     role_id INT NOT NULL,
+    session_id VARCHAR(254),
     PRIMARY KEY(email),
     FOREIGN KEY(role_id) REFERENCES roles(id)
+
     );
 
 CREATE TABLE if not exists relays (
@@ -45,10 +47,6 @@ CREATE TABLE if not exists sessions (
     );
 
 
-
-
-
-
 INSERT INTO roles (id, date_added, name)
 VALUES 
     (1, NOW(), 'administrator'),
@@ -74,8 +72,5 @@ VALUES
     ( 8, 0, NOW(), 'Relay8')
 ON DUPLICATE KEY UPDATE
     id = VALUES(id);
-
-
-    
 
 

@@ -30,14 +30,10 @@
     var calendarEl = document.getElementById('calendar');
 
     var calendar = new FullCalendar.Calendar(calendarEl, {
-      
-
       //Aspect ratio
       aspectRatio: 1.5,
-
       // en catala
       locale: 'ca',
-      
       // See operations and healthchecks of the schedule
       weekends:true,
       firstDay:1,
@@ -92,7 +88,9 @@
           alert('TItle: '+ info.event.title+', Start: '+info.event.start+', End: '+info.event.end)
         },*/
         select: function(selectionInfo) {
-          if (confirm("Estàs segur que vols fer un booking d'aquestes hores? Start"+selectionInfo.startStr+' end:'+selectionInfo.endStr)) {
+          //if (
+            alert(confirm("Estàs segur que vols fer un booking d'aquestes hores? Inici: "+selectionInfo.startStr+' Final:'+selectionInfo.endStr))
+            /*) {
             var newEvent = {
               title: '{{current_user.email}}',
               start: selectionInfo.start,
@@ -103,7 +101,7 @@
             };
           } else {
   
-          }
+          }*/
           // You can create a new event here using start and end times
 
           
