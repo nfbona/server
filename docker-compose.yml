@@ -11,18 +11,19 @@ services:
             dockerfile: Dockerfile
             target: base
         environment:
-            MYSQL_ROOT_PASSWORD: ${DATABASE_PASSWORD}
+            DATABASE_PASSWORD: ${DATABASE_PASSWORD}
             MYSQL_DATABASE: mysql
-        command: --init-file /data/application/init.sql
+            FLASK_APP_IP: ${FLASK_APP_IP}
+        command: ["/etc/mysql/init.sh"]
         volumes:
-            - ./MySql/init.sql:/data/application/init.sql
+            - ./MySql/init.sql:/data/application/init.sql.template
             - ./MySql/data:/var/lib/mysql
             - ./MySql/logs:/var/log/mysql
         networks:
             xarxa_interna:
-                ipv4_address: 172.22.0.11
+                ipv4_address: ${MYSQL_IP}
         hostname: mysql
-        
+         
 
     flask_app:
         tty: true
@@ -38,7 +39,7 @@ services:
             - 80
         networks:
             xarxa_interna:
-                ipv4_address: 172.22.0.22
+                ipv4_address: ${FLASK_APP_IP}
         hostname: flask_app
         restart: always
 
