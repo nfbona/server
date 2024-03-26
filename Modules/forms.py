@@ -1,6 +1,6 @@
 # forms, need to create forms and 
 from flask_wtf import FlaskForm
-from wtforms import  SubmitField,PasswordField,EmailField,PasswordField,ValidationError
+from wtforms import  SubmitField,PasswordField,EmailField,PasswordField
 from wtforms.validators import DataRequired,Email,EqualTo
 from .models import Users
 from flask import flash

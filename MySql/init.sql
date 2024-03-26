@@ -30,7 +30,7 @@ CREATE TABLE if not exists relays (
     PRIMARY KEY(id)
     );
 
-CREATE TABLE if not exists schedules (
+CREATE TABLE if not exists schedule (
     user_email VARCHAR(100), 
     start_time DATETIME, 
     end_time DATETIME, 
@@ -60,4 +60,16 @@ INSERT INTO users (email ,date_added ,last_login, password_hash,  role_id,color)
 ON DUPLICATE KEY UPDATE
     email = VALUES(email);
 
+INSERT INTO relays (id,state,date_modified,name) 
+VALUES 
+    ( 1, 0, NOW(), 'Relay1'),
+    ( 2, 0, NOW(), 'Relay2'),
+    ( 3, 0, NOW(), 'Relay3'),
+    ( 4, 0, NOW(), 'Relay4'),
+    ( 5, 0, NOW(), 'Relay5'),
+    ( 6, 0, NOW(), 'Relay6'),
+    ( 7, 0, NOW(), 'Relay7'),
+    ( 8, 0, NOW(), 'Relay8')
+ON DUPLICATE KEY UPDATE
+    id = VALUES(id);
 

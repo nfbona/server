@@ -23,7 +23,7 @@ def login():
         
     elif request.method == 'POST':
         if form.validate_on_submit():
-            user = sql.get_user(form.email.data)
+            user = sql.Users.get(form.email.data)
             if user and user.checkPass(form.password_hash.data):
                 user.login()
             else:
@@ -35,10 +35,9 @@ def login():
 @auth.route('/user/signup', methods=['POST','GET'])
 def signup():
     form = PasswordForm()
-    if request.method == 'GET':
-        our_users=sql.get_users()
-        return render_template('SignUp.html', form=form, our_users=our_users)
-    elif request.method == 'POST':
+    our_users=sql.Users.get_all()
+    
+    if request.method == 'POST':
         if form.validate_on_submit(): 
             # Admin role or same user
             if(form.validations()):
@@ -47,15 +46,16 @@ def signup():
                 flash('User already registered.')
             form.clean()
             
-            our_users= sql.get_users()
-    return redirect(url_for('auth.signup'))
+            
+    return render_template('SignUp.html', form=form, our_users=our_users)
+
  
 @auth.route('/user/update/<string:email>', methods=['GET'])
 def update(email):
-    user=sql.get_user(str(email))
-    if(email.is_same_user(session.get('user')) or user.is_admin_role()):
+    user=sql.Users.get(str(email))
+    if(email == session.get('user') or user.is_admin_role()):
         form = PasswordForm()
-        name_update= sql.get_user(email)
+        name_update= sql.Users.get(email)
         #Validate form
         return render_template('UpdateUser.html', form=form,our_user=name_update)
     flash("Not valid operation.")
@@ -65,13 +65,13 @@ def update(email):
 def updatePOST(email):
     if form.validate_on_submit():
         email=str(email)
-        user=sql.get_user(email)
-        if(email.is_same_user(session.get('user')) or user.is_admin_role()):
+        user=sql.Users.get(email)
+        if(email==session.get('user') or user.is_admin_role()):
             form = PasswordForm()
             #Validate form
         # if 
             user.set_password(form.password_hash.data)
-            sql.modify_object(user)
+            sql.Users.modify(user)
             form.clean()
             flash("Usuari modificat satisfactoriament.")
         
@@ -81,16 +81,16 @@ def updatePOST(email):
 @login_required
 def delete(email):
     
-    user=sql.get_user(email) 
-    if(email.is_same_user(session.get('user')) == email or user.is_admin_role()):
+    user=sql.Users.get(email) 
+    if(email==session.get('user') == email or user.is_admin_role()):
         #Validate form
         flash('Usuari borrat satisfactoriament.')
-        sql.delete_object(user)
+        sql.Users.delete(user)
         try:			
-            if(email.is_same_user(session.get('user'))):
+            if(email==session.get('user')):
                 return redirect(url_for('auth.logout'))
             else:
-                sql.delete_object(user)
+                sql.Users.delete(user)
                 return redirect(url_for('auth.signup'))
         except:
             return redirect(url_for('auth.signup'))
@@ -112,8 +112,8 @@ def error500(e):
 # get all existing events
 def get_events():
     modified_list=[]
-    all_schedule=sql.get_schedule()
-    user=sql.get_user(session['user'])
+    all_schedule=sql.Schedules.get_all()
+    user=sql.Users.get(session['user'])
         
     for event in all_schedule:
         if session['user']==event.email:
@@ -122,7 +122,7 @@ def get_events():
             try:
                 modified_list.append({"title":event.email,"groupId":event.email,"start":event.start_time,"end":event.end_time,"editable":"false","color":user.color})
             except:
-                sql.delete_object(event)
+                sql.Schedules.delete(event)
     return modified_list   
 
 

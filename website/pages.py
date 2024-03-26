@@ -2,9 +2,7 @@ from flask import Blueprint,  render_template, request,redirect,url_for,session
 from flask_login import login_required,current_user
 from . import sql
 from .auth import get_events
-from Modules.models import Users,Relay,Roles,Schedule
 from Modules.forms import UserField
-from datetime import datetime, timedelta
 
 
 pages = Blueprint("pages", __name__,template_folder='/app/templates', static_folder='/app/static')
@@ -14,7 +12,7 @@ pages = Blueprint("pages", __name__,template_folder='/app/templates', static_fol
 @pages.route('/', methods=['GET','POST'])
 def home_page():
     if current_user.is_authenticated:
-        relays=sql.get_relays()
+        relays=sql.Relays.get_all()
         return render_template('Switch.html',relays=relays)
     
     return redirect(url_for('auth.login'))
@@ -25,7 +23,7 @@ def home_page():
 @login_required
 def schedule():
     modified_list= get_events()
-    events_from_user=sql.get_schedule_user(session['user'])
+    events_from_user=sql.Users.get_schedules(session['user'])
     max_hours=3
     user=sql.get_user(session['user'])
     if user.is_user_role():
@@ -67,14 +65,14 @@ def json():
         if rely.wait_time_satisfied():
             # changing the state of the relay
             rely.state = request.json['value']
-            sql.modify_object(rely)
+            sql.Relays.modify(rely)
             
         else:
             return {"Error":"1","relay":str(request.json['id'])}
 
         return {"Error":"0","relay":str(request.json['id'])}
     if request.method == 'GET':
-        relays=sql.get_relays()
+        relays=sql.Relays.get_all()
         return relays
 
     return Relay
@@ -95,7 +93,7 @@ def configuration():
 # database Creation 
 @pages.route('/database', methods=['POST','GET'])
 def database():
-    relays=sql.get_relays()
-    roles=sql.get_roles()
-    users=sql.get_users()
+    relays=sql.Relays.get_all()
+    roles=sql.Roles.get_all()
+    users=sql.Users.get_all()
     return render_template('databse.html',our_roles=roles,our_relays=relays,our_users=users)

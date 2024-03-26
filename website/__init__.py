@@ -58,7 +58,7 @@ def create_app():
     # Load user
     @login_manager.user_loader
     def load_user(user_email):
-        return sql.get_user(user_email)
+        return sql.Users.get(user_email)
 
     # Handle unauthorized access
     @login_manager.unauthorized_handler
@@ -71,7 +71,7 @@ def create_app():
     def create_tables():
         print("Creating tables...")
         db.create_all()
-        sql.init_relays()
+        sql.Relays.init()
 
     # After each request, remove the session
     @app.teardown_appcontext

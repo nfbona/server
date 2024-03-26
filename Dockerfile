@@ -16,12 +16,10 @@ WORKDIR /app
 
 RUN pip3 install Flask
 RUN pip install -r requirements.txt
-RUN apt update
-RUN apt install python3-pip -y
 
 ENV FLASK_APP=app.py
 
-CMD ["sh","-c","sleep 10 && gunicorn --bind 0.0.0.0:80 wsgi:app --workers 1 --threads 5 --worker-class=sync"]
+CMD ["sh","-c","sleep 0 && gunicorn --bind 0.0.0.0:80 wsgi:app --workers 1 --threads 5 --worker-class=sync"]
 
 #,"","1"]
 

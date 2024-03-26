@@ -8,7 +8,7 @@ from sqlalchemy.orm import sessionmaker,scoped_session
 from sqlalchemy.pool import QueuePool
 from flask_login import login_user,logout_user
 from flask import session
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.ext.declarative import declarative_base # allows to make a class that maps to a table
 
 Base = declarative_base()
 
@@ -20,7 +20,40 @@ TIMETOWAIT=10
 #import to password hashing
 from werkzeug.security import generate_password_hash,check_password_hash
 
-class Users(db.Model, UserMixin):
+class BaseModel(Base):
+    __abstract__ = True
+    db = None
+    
+    @classmethod
+    def get_all(cls):
+        return db.session.query(cls).all()
+    
+    @classmethod
+    def add(cls,object):
+        session = cls.db.Session()
+        session.add(object)
+        session.commit()
+        session.close()
+        return True
+    
+    @classmethod
+    def modify(cls,object):
+        session = cls.db.Session()
+        session.merge(object)
+        session.commit()
+        session.close()
+        return True
+    
+    @classmethod
+    def delete(cls,object):
+        session = cls.db.Session()
+        session.delete(object)
+        session.commit()
+        session.close()
+        return True
+    
+    
+class Users(db.Model, UserMixin,BaseModel):
     __tablename__ = 'users'
     email = db.Column(db.String(100), primary_key=True)
     date_added = db.Column(db.DateTime, default=datetime.now)
@@ -72,11 +105,27 @@ class Users(db.Model, UserMixin):
         session.pop('user', None)
         logout_user()
         self.update_last_login()
+
+    
+    # Neext functions are used for sql searches
+    
+    # Get user from db //not initialized in sql server
+    @classmethod
+    def get(cls,email):
+        session = cls.db.Session()
+        user = session.query(cls).filter_by(email=email).first()
+        session.close()
+        return user
+    
+    @classmethod
+    def get_schedules(cls,email):
+        session = cls.db.Session()
+        schedules = session.query(Schedules).filter_by(user_email=email).all()
+        session.close()
+        return schedules
+    
         
-    def is_same_user(self,email):
-        return self.email==email
-        
-class Roles(db.Model, UserMixin):
+class Roles(db.Model, UserMixin, BaseModel):
     __tablename__ = 'roles'
     id = db.Column(db.Integer,primary_key=True,unique=True)
     date_added = db.Column(db.DateTime, default=datetime.utcnow)
@@ -86,7 +135,7 @@ class Roles(db.Model, UserMixin):
         self.id=id
         self.name=name
 
-class Relays(db.Model, UserMixin):
+class Relays(db.Model, UserMixin, BaseModel):
     __tablename__ = 'relays'
     id = db.Column(db.Integer,primary_key=True,nullable=False)
     state = db.Column(db.Integer,nullable=False)
@@ -115,7 +164,26 @@ class Relays(db.Model, UserMixin):
     def wait_time_satisfied(self):
         return (datetime.now()-timedelta(seconds=TIMETOWAIT)) > self.date_modified
 
-class Schedules(db.Model, UserMixin):
+
+    @classmethod
+    def get(cls,id): 
+        session = cls.db.Session()
+        relay = session.query(cls).filter_by(id=id).first()
+        session.close()
+        return relay
+
+    @classmethod
+    def init(cls):
+        relays=cls.get_all()
+        if not relays:
+            for i in range(1,9):
+                relay=cls(i,f"Relay {i}")
+                cls.add(relay)
+        return True
+
+
+
+class Schedules(db.Model, UserMixin, BaseModel):
     __tablename__ = 'schedule'
     user_email = db.Column(db.String(100), db.ForeignKey('users.email'),primary_key=True)
     start_time = db.Column(db.DateTime,primary_key=True)
@@ -125,92 +193,44 @@ class Schedules(db.Model, UserMixin):
         self.start_time=start_time
         self.user_email=email
         self.end_time = end_time
-        
-        
+
+    @classmethod
+    def get_all(cls):
+        session = cls.db.Session()
+        schedule = session.query(cls).order_by(cls.start_time).all()
+        session.close()
+        return schedule
+
+
+
 
 class SQLClass:
     def __init__(self, db_password):
         self.uri=f"mysql+pymysql://root:{db_password}@mysql/mysql"
         self.engine = create_engine(self.uri,poolclass=QueuePool)
         self.Session = scoped_session(sessionmaker(bind=self.engine))
+        BaseModel.db = self
 
     @property
     def Users(self):
         return Users
 
-    def get_user(self,email):
-        session = self.Session()
-        user = session.query(Users).filter_by(email=email).first()
-        session.close()
-        return user
+    @property
+    def Relays(self):
+        return Relays
 
-    def get_roles(self):
-        session = self.Session()
-        roles = session.query(Roles).order_by(Roles.date_added)
-        session.close()
-        return roles
-    
-    def get_relays(self):
-        session = self.Session()
-        relays = session.query(Relays).order_by(Relays.id)
-        session.close()
-        return relays
-    
-    def get_relay(self,id): 
-        session = self.Session()
-        relay = session.query(Relays).filter_by(id=id).first()
-        session.close()
-        return relay
+    @property
+    def Schedules(self):
+        return Schedules
 
-    def get_schedule(self):
-        session = self.Session()
-        schedule = session.query(Schedules).order_by(Schedules.start_time).all()
-        session.close()
-        return schedule
-    
-    def get_schedule_user(self,email):
-        session = self.Session()
-        schedule = session.query(Schedules).filter_by(user_email=email).order_by(Schedules.start_time)
-        session.close()
-        return schedule
-
-    def add_object(self,object):
-        session = self.Session()
-        session.add(object)
-        session.commit()
-        session.close()
-        return True
-    
-    def modify_object(self,object):
-        session = self.Session()
-        session.merge(object)
-        session.commit()
-        session.close()
-        return True
-    
-    def delete_object(self,object):
-        session = self.Session()
-        session.delete(object)
-        session.commit()
-        session.close()
-        return True
+    @property
+    def Roles(self):
+        return Roles
     
     def remove(self):
         self.Session.remove()
         return True
     
-    def init_relays(self):
-        relays=self.get_relays()
-        if not relays:
-            for i in range(1,9):
-                relay=Relay(i,f"Relay {i}")
-                self.add_object(relay)
-        return True
+
     
     
-class BaseModel(Base):
-    __abstract__ = True
-    
-    @classmethod
-    def get_all(cls, session):
-        return session.query(cls).all()
