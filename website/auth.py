@@ -1,18 +1,17 @@
 from flask import Blueprint,request,session, render_template, redirect, url_for, flash
 # User Login
-from . import session_db,logout_procedure
-from Modules.models import Users,Schedule
+from . import sql
 from Modules.forms import LogInForm,PasswordForm
 from flask import Blueprint
-from flask_login import login_user, login_required,current_user
+from flask_login import login_required
 from datetime import datetime, timedelta
-from werkzeug.security import generate_password_hash
 
 auth = Blueprint("auth", __name__, template_folder='/app/templates', static_folder='/app/static')
 
 @auth.route('/logout', methods=['POST', 'GET'])
 def logout():
-    logout_procedure()
+    user=session.get('user')
+    user.logout()
     return redirect(url_for('pages.home_page'))
 
 @auth.route('/login', methods=['GET','POST'])
@@ -21,45 +20,42 @@ def login():
     if request.method == 'GET':
         if not(session.get('user')):
             return render_template('Login.html', form=form)
+        
     elif request.method == 'POST':
         if form.validate_on_submit():
-            user = session_db.query(Users).filter_by(email=form.email.data).first()
+            user = sql.get_user(form.email.data)
             if user and user.checkPass(form.password_hash.data):
-                login_user(user)
-                session['user'] = user.email
+                user.login()
             else:
                 flash('Invalid username or password')
                 return redirect(url_for('auth.login'))
+            
     return redirect(url_for('pages.home_page'))
 
 @auth.route('/user/signup', methods=['POST','GET'])
 def signup():
     form = PasswordForm()
     if request.method == 'GET':
-        our_users=session_db.query(Users).all()
-        print(our_users)
+        our_users=sql.get_users()
         return render_template('SignUp.html', form=form, our_users=our_users)
     elif request.method == 'POST':
         if form.validate_on_submit(): 
             # Admin role or same user
-            user = session_db.query(Users).filter_by(email=form.email.data).first()
-            if(user is None):
-                user = Users(email=form.email.data, password_hash= form.password_hash.data)   
-                session_db.add(user)
-                session_db.commit()
+            if(form.validations()):
+                form.create_user()
             else:
                 flash('User already registered.')
-            user=None
-            form.email.data = None
-            form.password_hash.data=None
-            our_users= session_db.query(Users).order_by(Users.date_added + timedelta(hours=2)) 
+            form.clean()
+            
+            our_users= sql.get_users()
     return redirect(url_for('auth.signup'))
  
 @auth.route('/user/update/<string:email>', methods=['GET'])
 def update(email):
-    if('user' in session and (session['user'] == email or session_db.query(Users).filter_by(email=email).first().role_id ==1)):
+    user=sql.get_user(str(email))
+    if(email.is_same_user(session.get('user')) or user.is_admin_role()):
         form = PasswordForm()
-        name_update= session_db.query(Users).filter_by(email=email).first()
+        name_update= sql.get_user(email)
         #Validate form
         return render_template('UpdateUser.html', form=form,our_user=name_update)
     flash("Not valid operation.")
@@ -67,18 +63,16 @@ def update(email):
     
 @auth.route('/user/update/<string:email>', methods=['POST'])
 def updatePOST(email):
-    email=str(email)
-    if('user' in session and (session['user'] == email or session_db.query(Users).filter_by(email=email).first().role_id ==1)):
-        form = PasswordForm()
-        name_update= session_db.query(Users).filter_by(email=email).first()
-        #Validate form
-        if form.validate_on_submit():
-            # if 
-            
-            name_update.set_password(form.password_hash.data)
-            session_db.commit()
-            form.email.data = ''
-            form.password_hash.data = ''
+    if form.validate_on_submit():
+        email=str(email)
+        user=sql.get_user(email)
+        if(email.is_same_user(session.get('user')) or user.is_admin_role()):
+            form = PasswordForm()
+            #Validate form
+        # if 
+            user.set_password(form.password_hash.data)
+            sql.modify_object(user)
+            form.clean()
             flash("Usuari modificat satisfactoriament.")
         
     return redirect(url_for('update',email=email))
@@ -86,26 +80,19 @@ def updatePOST(email):
 @auth.route('/user/delete/<string:email>', methods=['POST'])
 @login_required
 def delete(email):
-    email=str(email)
-    if('user' in session and (session['user'] == email or session_db.query(Users).get(session['user']).role_id ==1)):
-        user=session_db.query(Users).filter_by(email=email).first()
+    
+    user=sql.get_user(email) 
+    if(email.is_same_user(session.get('user')) == email or user.is_admin_role()):
         #Validate form
-        flash('Usuari deletejat satisfactoriament.')
+        flash('Usuari borrat satisfactoriament.')
+        sql.delete_object(user)
         try:			
-            if('user' in session and session['user'] == user.email):
-                print('SAME EMAIL AS USER')
-                
-                session_db.delete(user)
-                session_db.commit()
+            if(email.is_same_user(session.get('user'))):
                 return redirect(url_for('auth.logout'))
             else:
-                print('OTHER EMAIL')
-                
-                session_db.delete(user)
-                session_db.commit()
+                sql.delete_object(user)
                 return redirect(url_for('auth.signup'))
         except:
-            print('EXCEPT')
             return redirect(url_for('auth.signup'))
     flash("Operació no valida.")
     return redirect(url_for('auth.signup'))
@@ -114,8 +101,6 @@ def delete(email):
 @auth.errorhandler(404)
 def error400(e):
     return render_template('error/404.html')  
-
-
 
 @auth.errorhandler(500)
 def error500(e):
@@ -126,24 +111,18 @@ def error500(e):
 #--------FUNCTIONS--------
 # get all existing events
 def get_events():
-    
     modified_list=[]
-    start_date = datetime.now() - timedelta(weeks=1)
-    all_schedule=session_db.query(Schedule).filter(Schedule.end_time >=start_date).all()
+    all_schedule=sql.get_schedule()
+    user=sql.get_user(session['user'])
         
     for event in all_schedule:
         if session['user']==event.email:
-            User=session_db.query(Users).get(session['user'])
-            modified_list.append({"title":event.email,"groupId":event.email,"start":event.start_time,"end":event.end_time,"editable":"true","color":User.color})
+            modified_list.append({"title":event.email,"groupId":event.email,"start":event.start_time,"end":event.end_time,"editable":"true","color":user.color})
         else:
             try:
-                user=session_db.query(Users).filter_by(email=event.email).first()
                 modified_list.append({"title":event.email,"groupId":event.email,"start":event.start_time,"end":event.end_time,"editable":"false","color":user.color})
             except:
-                session_db.delete(event)
+                sql.delete_object(event)
     return modified_list   
 
 
-def generate_unique_id(user):
-    data = f"{user.email}-{datetime.utcnow()}"
-    return generate_password_hash(data)

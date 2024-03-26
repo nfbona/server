@@ -11,12 +11,12 @@ services:
             dockerfile: Dockerfile
             target: base
         environment:
-            DATABASE_PASSWORD: ${DATABASE_PASSWORD}
             MYSQL_DATABASE: mysql
             FLASK_APP_IP: ${FLASK_APP_IP}
-        command: ["/etc/mysql/init.sh"]
+            MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+        command: --init-file /data/application/init.sql
         volumes:
-            - ./MySql/init.sql:/data/application/init.sql.template
+            - ./MySql/init.sql:/data/application/init.sql
             - ./MySql/data:/var/lib/mysql
             - ./MySql/logs:/var/log/mysql
         networks:
