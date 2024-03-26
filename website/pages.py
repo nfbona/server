@@ -25,7 +25,7 @@ def schedule():
     modified_list= get_events()
     events_from_user=sql.Users.get_schedules(session['user'])
     max_hours=3
-    user=sql.get_user(session['user'])
+    user=sql.Users.get(session['user'])
     if user.is_user_role():
         for event in events_from_user:
             time=(event.end_time-event.start_time).total_seconds() / 3600
@@ -61,8 +61,8 @@ def user():
 @login_required
 def json():
     if request.method == 'POST':  #this block is only entered when the form is submitted
-        rely=sql.get_relay(request.json['id'])
-        if rely.wait_time_satisfied():
+        rely=sql.Relays.get(request.json['id'])
+        if rely.is_wait_time_satisfied():
             # changing the state of the relay
             rely.state = request.json['value']
             sql.Relays.modify(rely)
@@ -75,7 +75,7 @@ def json():
         relays=sql.Relays.get_all()
         return relays
 
-    return Relay
+    return relays
 
 # ------------------  NEW TEMPLATES TO BE MADE ------------------ #
 
@@ -94,6 +94,12 @@ def configuration():
 @pages.route('/database', methods=['POST','GET'])
 def database():
     relays=sql.Relays.get_all()
+    print(relays)
+    for relay in relays:
+        print(relay.id)
+        print(relay.state)
+        print(relay.date_modified)
+        print(relay.name)
     roles=sql.Roles.get_all()
     users=sql.Users.get_all()
     return render_template('databse.html',our_roles=roles,our_relays=relays,our_users=users)

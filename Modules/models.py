@@ -137,31 +137,46 @@ class Roles(db.Model, UserMixin, BaseModel):
 
 class Relays(db.Model, UserMixin, BaseModel):
     __tablename__ = 'relays'
-    id = db.Column(db.Integer,primary_key=True,nullable=False)
-    state = db.Column(db.Integer,nullable=False)
-    date_modified = db.Column(db.DateTime,nullable=False)
-    name = db.Column(db.String(100), nullable=False,unique=True)
+    _id = db.Column('id', db.Integer, primary_key=True, nullable=False)
+    _state = db.Column('state', db.Integer, nullable=False)
+    _date_modified = db.Column('date_modified', db.DateTime, nullable=False)
+    _name = db.Column('name', db.String(100), nullable=False, unique=True)
+
+    @property
+    def state(self):
+        return self._state
+
+    @state.setter
+    def state(self, state):
+        self._state = state
+        self._date_modified = datetime.now()
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, name):
+        self._name = name
     
     @property
-    def Relays(self):
-        raise AttributeError('Error')
-    
-    @Relays.setter
-    def state(self,state):
-        self.state=state
-        self.date_modified=datetime.now()
+    def id(self):
+        return self._id
 
-    @Relays.setter
-    def name(self,name):
-        self.name=name
+    @name.setter
+    def id(self, id):
+        self._id = id
+    
+    @property
+    def date_modified(self):
+        return self._date_modified
     
     def __init__(self,id,name):
         self.id=id
         self.name=name
-        self.date_modified=datetime.now()
         self.state=0
         
-    def wait_time_satisfied(self):
+    def is_wait_time_satisfied(self):
         return (datetime.now()-timedelta(seconds=TIMETOWAIT)) > self.date_modified
 
 
