@@ -2,23 +2,30 @@
 from flask_wtf import FlaskForm
 from wtforms import  SubmitField,PasswordField,EmailField,PasswordField
 from wtforms.validators import DataRequired,Email,EqualTo
-from .models import Users
 from flask import flash
 from website import sql
 
 # Creation or updating
-class PasswordForm(FlaskForm):
+
+class FormBase(FlaskForm):
+        __abstract__ = True
+        
+        def clean(self):
+                for attr in self:
+                        attr.data = None
+                return True
+
+class PasswordForm(FormBase):
         email=EmailField("Email",validators=[Email()])
         password_hash=PasswordField("Password",validators=[DataRequired(),EqualTo('password_check',message='Passwords must match')])
         password_check=PasswordField("Confirm Password",validators=[DataRequired()])
         submit = SubmitField('Submit')
         
         def validate_email_unique(self):
-                user = Users.query.filter_by(email=self.email.data).first()
+                user = sql.Users.get(self.email.data)
                 if user:
                         return False
                 return True
-                
 
         def validate_password_length(self):
                 if len(self.password_hash.data) < 8:
@@ -43,25 +50,15 @@ class PasswordForm(FlaskForm):
                         flash('Passwords must match.')
                         return False
                 return True
-                
-        def create_user(self):
-                user = Users(email=self.email.data, password_hash=self.password_hash.data)
-                sql.add_object(user)
-                return True
-                
-        def clean(self):
-                self.email.data = None
-                self.password_hash.data = None
-                self.password_check.data = None
-                return True
+
         
 # Create to check in
-class LogInForm(FlaskForm):
+class LogInForm(FormBase):
         email=EmailField("Email",validators=[Email()])
         password_hash=PasswordField("Password",validators=[DataRequired()])
         submit = SubmitField('Submit')
 
 # Create form class TESTUING
-class UserField(FlaskForm):
+class UserField(FormBase):
         email=EmailField("Email",validators=[Email()])
         submit = SubmitField('Submit')

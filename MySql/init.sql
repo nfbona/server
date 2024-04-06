@@ -14,12 +14,12 @@ CREATE TABLE if not exists users (
     color VARCHAR(20),
     date_added DATETIME, 
     last_login DATETIME, 
-    password_hash VARCHAR(128) NOT NULL, 
+    password_hash VARCHAR(256) NOT NULL, 
     role_id INT NOT NULL,
-    session_id VARCHAR(254),
+    is_active BOOLEAN DEFAULT TRUE,
+    is_session_active BOOLEAN DEFAULT FALSE,
     PRIMARY KEY(email),
     FOREIGN KEY(role_id) REFERENCES roles(id)
-
     );
 
 CREATE TABLE if not exists relays (

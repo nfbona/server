@@ -6,12 +6,14 @@ import random
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker,scoped_session
 from sqlalchemy.pool import QueuePool
-from flask_login import login_user,logout_user
+from flask_login import login_user,logout_user,current_user
 from flask import session
 from sqlalchemy.ext.declarative import declarative_base # allows to make a class that maps to a table
 
+# initialize the base class ootb ORM
 Base = declarative_base()
 
+# initialize the database
 db = SQLAlchemy()
 
 # Between two requests the time to wait to change the relay
@@ -20,18 +22,31 @@ TIMETOWAIT=10
 #import to password hashing
 from werkzeug.security import generate_password_hash,check_password_hash
 
-class BaseModel(Base):
+class BaseModel(db.Model, Base):
     __abstract__ = True
     db = None
     
     @classmethod
     def get_all(cls):
-        return db.session.query(cls).all()
+        session = cls.db.Session()
+        objects = session.query(cls).all()
+        session.close()
+        return objects
     
     @classmethod
-    def add(cls,object):
+    def new(cls, object):
+        print("Creating new object ",object)
         session = cls.db.Session()
         session.add(object)
+        session.commit()
+        session.close()
+        return True
+    
+    @classmethod
+    def new(cls,*args):
+        print("Creating new class ",*args)
+        session = cls.db.Session()
+        session.add(cls(*args))
         session.commit()
         session.close()
         return True
@@ -52,43 +67,74 @@ class BaseModel(Base):
         session.close()
         return True
     
-    
-class Users(db.Model, UserMixin,BaseModel):
+class Users(UserMixin,BaseModel):
     __tablename__ = 'users'
-    email = db.Column(db.String(100), primary_key=True)
-    date_added = db.Column(db.DateTime, default=datetime.now)
-    last_login = db.Column(db.DateTime, default=datetime.now)
-    password_hash= db.Column(db.String(128),nullable=False)
+    _email = db.Column('email',db.String(100), primary_key=True)
+    _date_added = db.Column('date_added',db.DateTime, default=datetime.now)
+    last_login = db.Column('last_login',db.DateTime, default=datetime.now)
+    _password_hash= db.Column('password_hash',db.String(257),nullable=False)
+    _role_id = db.Column('role_id',db.Integer, db.ForeignKey('roles.id'),nullable=False,default=2)
+    color = db.Column('color',db.String(20))
+    _is_session_active = db.Column('is_session_active',db.Boolean,nullable=False,default=True)
+    _is_active= db.Column('is_active',db.Boolean,nullable=False,default=True)
     
-   # One user can have many roles, referencing an inexisting column in ROles that will be created automatically.
-    # key_roles=db.relationship('Roles',backref='user',lazy='dynamic')
     
-    # One to one relationship must have a role
-    role_id = db.Column(db.Integer, db.ForeignKey('roles.id'),nullable=False,default=2)
-    color = db.Column(db.String(20))
-    
-    # create a string
-    def __repr__(self):
-            return '<Email %r>' % self.email
- 
-    def set_password(self,password):
-        self.password_hash = generate_password_hash(password, method='scrypt')
-    
-    def checkPass(self,password):
-       return check_password_hash(self.password_hash,password)
-        
-    def __init__(self,email,password_hash):
+    def __init__(self,email,password):
         self.email=email
-        self.password_hash=generate_password_hash(password_hash,"sha256")
+        self.password_hash=password
         self.date_modified=datetime.now()
         self.last_login=datetime.now()
         self.color=str(random.randint(0, 176))+','+str(random.randint(0, 176))+','+str(random.randint(0, 176))
         
-    def update_last_login(self):
-        self.last_login=datetime.now()
+    # Setters and getters
+    @property
+    def email(self):
+        return self._email
+
+    @email.setter
+    def email(self, email):
+        self._email = email
+        
+    @property
+    def password_hash(self):
+        return self._password_hash
+
+    @password_hash.setter
+    def password_hash(self, password):
+        self._password_hash = generate_password_hash(password, method='scrypt')
+
+    @property
+    def role_id(self):
+        return self._role_id
+
+    @role_id.setter
+    def role_id(self,role_id):
+        self._role_id = role_id
+
+    @property
+    def is_session_active(self):
+        return self._is_session_active
+
+    @is_session_active.setter
+    def is_session_active(self,is_token):
+        self._is_session_active = is_token
+
+    @property
+    def is_active(self):
+        return self._is_active
+
+    @is_active.setter
+    def is_active(self,is_user_active):
+        self._is_active = is_user_active
         
     def get_id(self):
-           return (self.email)
+           return self.email
+
+    def checkPass(self,password):
+        return check_password_hash(self.password_hash,password)
+        
+    def update_last_login(self):
+        self.last_login=datetime.now()
        
     def is_admin_role(self):
         return self.role_id==1
@@ -96,52 +142,66 @@ class Users(db.Model, UserMixin,BaseModel):
     def is_user_role(self):
         return self.role_id==2
     
-    def login(self):
-        session['user'] = self.email
-        login_user(self)
-        self.update_last_login()
-        
-    def logout(self):
-        session.pop('user', None)
+    @classmethod
+    def login(cls,user):
+        user.is_session_active = True
+        user.update_last_login()
+        cls.modify(user)
+        login_user(user)
+    
+    @classmethod
+    def logout(cls,user):
+        user.update_last_login()
+        cls.modify(user)
+        user.session_hash = False
         logout_user()
-        self.update_last_login()
-
-    
-    # Neext functions are used for sql searches
-    
+            
     # Get user from db //not initialized in sql server
     @classmethod
     def get(cls,email):
         session = cls.db.Session()
-        user = session.query(cls).filter_by(email=email).first()
+        user = session.query(cls).filter_by(_email=str(email)).first()
         session.close()
         return user
-    
-    @classmethod
-    def get_schedules(cls,email):
-        session = cls.db.Session()
-        schedules = session.query(Schedules).filter_by(user_email=email).all()
-        session.close()
-        return schedules
-    
-        
-class Roles(db.Model, UserMixin, BaseModel):
+
+class Roles( BaseModel):
     __tablename__ = 'roles'
-    id = db.Column(db.Integer,primary_key=True,unique=True)
-    date_added = db.Column(db.DateTime, default=datetime.utcnow)
-    name = db.Column(db.String(100), nullable=False,unique=True)
+    _id = db.Column('id', db.Integer, primary_key=True, unique=True)
+    _name = db.Column('name', db.String(100), nullable=False, unique=True)
+    date_added = db.Column('date_added',db.DateTime, default=datetime.now)
 
-    def __init__(self,id,name):
-        self.id=id
-        self.name=name
+    def __init__(self, id, name):
+        self._id = id
+        self._name = name
 
-class Relays(db.Model, UserMixin, BaseModel):
+    @property
+    def id(self):
+        return self._id
+
+    @id.setter
+    def id(self, id):
+        self._id = id
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, name):
+        self._name = name
+        
+class Relays(BaseModel):
     __tablename__ = 'relays'
     _id = db.Column('id', db.Integer, primary_key=True, nullable=False)
     _state = db.Column('state', db.Integer, nullable=False)
     _date_modified = db.Column('date_modified', db.DateTime, nullable=False)
     _name = db.Column('name', db.String(100), nullable=False, unique=True)
 
+    def __init__(self,id,name):
+        self.id=id
+        self.name=name
+        self.state=0
+        
     @property
     def state(self):
         return self._state
@@ -171,10 +231,6 @@ class Relays(db.Model, UserMixin, BaseModel):
     def date_modified(self):
         return self._date_modified
     
-    def __init__(self,id,name):
-        self.id=id
-        self.name=name
-        self.state=0
         
     def is_wait_time_satisfied(self):
         return (datetime.now()-timedelta(seconds=TIMETOWAIT)) > self.date_modified
@@ -193,16 +249,14 @@ class Relays(db.Model, UserMixin, BaseModel):
         if not relays:
             for i in range(1,9):
                 relay=cls(i,f"Relay {i}")
-                cls.add(relay)
+                cls.new(relay)
         return True
 
-
-
-class Schedules(db.Model, UserMixin, BaseModel):
+class Schedules(BaseModel):
     __tablename__ = 'schedule'
-    user_email = db.Column(db.String(100), db.ForeignKey('users.email'),primary_key=True)
-    start_time = db.Column(db.DateTime,primary_key=True)
-    end_time = db.Column(db.DateTime)
+    user_email = db.Column('user_email',db.String(100), db.ForeignKey('users.email'),primary_key=True)
+    start_time = db.Column('start_time',db.DateTime,primary_key=True)
+    end_time = db.Column('end_time',db.DateTime)
         
     def __init__(self,email,start_time,end_time):
         self.start_time=start_time
@@ -216,9 +270,20 @@ class Schedules(db.Model, UserMixin, BaseModel):
         session.close()
         return schedule
 
-
-
-
+    @classmethod
+    def get_user_schedules(cls,user):
+        session = cls.db.Session()
+        schedules = session.query(Schedules).filter_by(user_email=user.email).all()
+        session.close()
+        return schedules
+    
+    @classmethod
+    def get_future_user_schedules(cls,user):
+        session = cls.db.Session()
+        schedules = session.query(Schedules).filter_by(user_email=user.email).filter(Schedules.start_time>datetime.now()).all()
+        session.close()
+        return schedules
+    
 class SQLClass:
     def __init__(self, db_password):
         self.uri=f"mysql+pymysql://root:{db_password}@mysql/mysql"
@@ -245,7 +310,6 @@ class SQLClass:
     def remove(self):
         self.Session.remove()
         return True
-    
 
     
     

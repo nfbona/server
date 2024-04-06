@@ -1,9 +1,9 @@
 # Import necessary modules
-from flask import Flask, redirect, url_for,session
+from flask import Flask, redirect, url_for
 from dotenv import dotenv_values
 from datetime import timedelta
 
-from flask_login import LoginManager, logout_user, current_user
+from flask_login import LoginManager, current_user
 from Modules.models import db, SQLClass
 
 # Set up SQLAlchemy engine and session
@@ -40,51 +40,48 @@ def init_blueprints(app):
     return app
 
 # Function to initialize login manager
-def init_login(app):
+def init_login_manager(app):
     login_manager = LoginManager()
     login_manager.login_view = 'pages.home_page'
     login_manager.init_app(app)
+    app.config['SESSION_COOKIE_SECURE'] = True
+    app.config['SESSION_COOKIE_HTTPONLY'] = True
+    app.config['SESSION_PROTECTION'] = 'strong'
+    
     return app, login_manager
 
 # Function to create Flask app
 def create_app():
-    crsf_key = get_environ()  # Load environment variables
-    app = init_flask(crsf_key)  # Initialize Flask app
-    app, login_manager = init_login(app)  # Initialize login manager
-    app = init_sql(app)  # Initialize SQLAlchemy
-    app = init_blueprints(app)  # Initialize blueprints
-    app.app_context().push()  # Push application context
+    crsf_key = get_environ()  
+    app = init_flask(crsf_key)  
+    app, login_manager = init_login_manager(app)  
+    app = init_sql(app) 
+    app = init_blueprints(app) 
+    app.app_context().push()  
 
     # Load user
     @login_manager.user_loader
-    def load_user(user_email):
+    def user_loader(user_email):
         return sql.Users.get(user_email)
 
     # Handle unauthorized access
     @login_manager.unauthorized_handler
     def unauthorized_callback():
-        print("NOT unauthorized_handler")
         return redirect(url_for('pages.home_page'))
 
     # Before the first request, create all tables
     @app.before_first_request
-    def create_tables():
+    def create_tables_sql():
         print("Creating tables...")
         db.create_all()
         sql.Relays.init()
+        
+    @login_manager.needs_refresh_handler
+    def refresh_login():
+        if current_user.is_authenticated:
+            print("Refreshing login...")
+            print("Session token: ",current_user.session)
 
-    # After each request, remove the session
-    @app.teardown_appcontext
-    def remove_session(*args, **kwargs):
-        sql.remove()
+    # your code here
 
     return app
-
-
-
-# Function to perform logout procedure
-def logout_procedure():
-    if session.get('user'):
-        session.pop('user')
-        logout_user()
-        session.clear()

@@ -18,13 +18,47 @@
 
 
 <script>
-  function newEvent(info){
-    
+  function newEvent(){
+    var newEvent = {
+      title: '{{current_user.email}}',
+      start: selectionInfo.start,
+      end: selectionInfo.end,
+      backgroundColor:'rgb({{current_user.color}})',
+      editable: true,
+      groupId:'{{current_user.email}}'
+    };
+    return newEvent;
   }
 
   function changeEvent(info){
     
   }
+
+  function ajaxRquest(path,object){
+    if(confirm("Estàs segur que vols fer un booking d'aquestes hores? Inici: "+selectionInfo.startStr+' Final:'+selectionInfo.endStr)) 
+    {
+      // Make AJAX request to CreateEvent
+      var response;
+      $.ajax({
+          url: '/path',  // URL of the route
+          type: 'POST',  // HTTP method
+          data: object,
+          success: function(response) {
+            response=response;
+          },
+          error: function(jqXHR, textStatus, errorThrown) {
+              console.error(textStatus, errorThrown);
+              response=false;
+          }
+      });
+2
+
+      return response;
+    }
+  }
+
+
+  
 
   document.addEventListener('DOMContentLoaded', function() {
     var calendarEl = document.getElementById('calendar');
@@ -57,13 +91,6 @@
         center: 'title',
         right: 'timeGridWeek,listWeek'
       },
-      select: function(info) {
-        if (confirm("Estàs segur que vols fer un booking d'aquestes hores? Start"+info.startStr+' end:'+info.endStr)) {
-          
-        } else {
-
-        }
-      },
       events:
         [
         {% for event in all_events %}
@@ -89,7 +116,15 @@
         },*/
         select: function(selectionInfo) {
           //if (
-            alert(confirm("Estàs segur que vols fer un booking d'aquestes hores? Inici: "+selectionInfo.startStr+' Final:'+selectionInfo.endStr))
+            if(confirm("Estàs segur que vols fer un booking d'aquestes hores? Inici: "+selectionInfo.startStr+' Final:'+selectionInfo.endStr))
+            {
+              var event = newEvent();
+              
+              calendar.addEvent(event);
+
+
+
+            }
             /*) {
             var newEvent = {
               title: '{{current_user.email}}',
@@ -106,7 +141,7 @@
 
           
           // Add the new event to the calendar
-          calendar.addEvent(newEvent);
+          
         },
     
 
