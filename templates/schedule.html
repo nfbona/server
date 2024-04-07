@@ -2,9 +2,8 @@
 {% extends "base/baseNavbar.html" %}
 {% block title %}  {% endblock %}
 {% block content %} 
-
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
-<script src='fullcalendar/core/locales/ca.global.js'></script>
 <!--
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css">
 -->
@@ -18,48 +17,75 @@
 
 
 <script>
-  function newEvent(){
-    var newEvent = {
+  
+  function createEvent(selectionInfo){
+    return {
       title: '{{current_user.email}}',
       start: selectionInfo.start,
       end: selectionInfo.end,
       backgroundColor:'rgb({{current_user.color}})',
       editable: true,
-      groupId:'{{current_user.email}}'
+      groupId:'{{current_user.email}}' + Math.random()
     };
-    return newEvent;
+  }
+  
+  function newEvent(selectionInfo){
+    event = createEvent(selectionInfo);
+    var result=ajaxPostRequest("{{url_for('pages.create_event')}}",event);
+    
+    if(result['Created']){
+      console.log(event);
+      return event;
+    }else{//TEMPORAL
+      return event;
+    }
   }
 
   function changeEvent(info){
     
   }
 
-  function ajaxRquest(path,object){
-    if(confirm("Estàs segur que vols fer un booking d'aquestes hores? Inici: "+selectionInfo.startStr+' Final:'+selectionInfo.endStr)) 
-    {
+  function ajaxGetRequest(url,object){
       // Make AJAX request to CreateEvent
-      var response;
+      var responseContent;
       $.ajax({
-          url: '/path',  // URL of the route
-          type: 'POST',  // HTTP method
-          data: object,
+          url: url,  // URL of the route
+          type: 'GET',  // HTTP method
+          async: false,
           success: function(response) {
-            response=response;
+            responseContent=response;
           },
-          error: function(jqXHR, textStatus, errorThrown) {
-              console.error(textStatus, errorThrown);
-              response=false;
+          error: function(errorThrown) {
+              console.error(errorThrown);
+              responseContent=errorThrown;
           }
       });
-2
-
-      return response;
+      console.log(responseContent);
+      return responseContent;
     }
-  }
-
-
   
+  function ajaxPostRequest(url,object){
+      // Make AJAX request to CreateEvent
+      var responseContent;
+      $.ajax({
+          url: url,  // URL of the route
+          contentType: 'application/json',  // content type
+          type: 'POST',  // HTTP method
+          data: JSON.stringify(object),
+          async: false,
+          success: function(response){
+            responseContent=response;
+          },
+          error: function(errorThrown){
+              console.error(errorThrown);
+              responseContent=null;
+          }
+      });
 
+      console.log(responseContent);
+      return responseContent;
+    }
+  
   document.addEventListener('DOMContentLoaded', function() {
     var calendarEl = document.getElementById('calendar');
 
@@ -100,9 +126,9 @@
             start:"{{event.start}}", 
             end:"{{event.end}}",
             editable:{{event.editable}},
-            backgroundColor:'rgb({{event.color}})',
-          },
-          {%endfor%}
+            backgroundColor:"rgb({{event.color}})"
+          }{% if not loop.last %},{% endif %}
+        {% endfor %}
         ],
         
         eventChange: function(info){
@@ -116,14 +142,13 @@
         },*/
         select: function(selectionInfo) {
           //if (
-            if(confirm("Estàs segur que vols fer un booking d'aquestes hores? Inici: "+selectionInfo.startStr+' Final:'+selectionInfo.endStr))
+            if(confirm("Estàs segur que vols fer un booking d'aquestes hores?\n Inici: "+selectionInfo.startStr+' Final:'+selectionInfo.endStr))
             {
-              var event = newEvent();
-              
+              var event = newEvent(selectionInfo);
+              console.log(event);
               calendar.addEvent(event);
-
-
-
+            }{
+              calendar.unselect();
             }
             /*) {
             var newEvent = {
@@ -163,7 +188,7 @@
             </div>
             <div class="col-3">
               <div id="userConfig" style="margin-bottom:1em;height:350px;overflow:auto;padding:1em;"> 
-                <h2 class="text-center">User information</h2>
+                <h2 class="text-center">User information {{current_user.email}}</h2>
                 <div id="llistaEvents">
                   
                   <div>

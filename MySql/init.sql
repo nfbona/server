@@ -34,8 +34,9 @@ CREATE TABLE if not exists schedule (
     user_email VARCHAR(100), 
     start_time DATETIME, 
     end_time DATETIME, 
+    id VARCHAR(256) NOT NULL, 
     FOREIGN KEY(user_email) REFERENCES users(email),
-    PRIMARY KEY(user_email,start_time)
+    PRIMARY KEY(id)
     );
 
 CREATE TABLE if not exists sessions (

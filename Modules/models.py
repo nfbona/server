@@ -74,7 +74,7 @@ class Users(UserMixin,BaseModel):
     last_login = db.Column('last_login',db.DateTime, default=datetime.now)
     _password_hash= db.Column('password_hash',db.String(257),nullable=False)
     _role_id = db.Column('role_id',db.Integer, db.ForeignKey('roles.id'),nullable=False,default=2)
-    color = db.Column('color',db.String(20))
+    _color = db.Column('color',db.String(20))
     _is_session_active = db.Column('is_session_active',db.Boolean,nullable=False,default=True)
     _is_active= db.Column('is_active',db.Boolean,nullable=False,default=True)
     
@@ -126,6 +126,14 @@ class Users(UserMixin,BaseModel):
     @is_active.setter
     def is_active(self,is_user_active):
         self._is_active = is_user_active
+        
+    @property
+    def color(self):
+        return self._color
+    
+    @color.setter
+    def color(self,color):
+        self._color=color    
         
     def get_id(self):
            return self.email
@@ -231,10 +239,8 @@ class Relays(BaseModel):
     def date_modified(self):
         return self._date_modified
     
-        
     def is_wait_time_satisfied(self):
         return (datetime.now()-timedelta(seconds=TIMETOWAIT)) > self.date_modified
-
 
     @classmethod
     def get(cls,id): 
@@ -254,14 +260,16 @@ class Relays(BaseModel):
 
 class Schedules(BaseModel):
     __tablename__ = 'schedule'
-    user_email = db.Column('user_email',db.String(100), db.ForeignKey('users.email'),primary_key=True)
-    start_time = db.Column('start_time',db.DateTime,primary_key=True)
+    user_email = db.Column('user_email',db.String(100), db.ForeignKey('users.email'))
+    start_time = db.Column('start_time',db.DateTime)
     end_time = db.Column('end_time',db.DateTime)
+    id = db.Column('id',db.String(256),primary_key=True)
         
-    def __init__(self,email,start_time,end_time):
+    def __init__(self,email,start_time,end_time,id):
         self.start_time=start_time
         self.user_email=email
-        self.end_time = end_time
+        self.end_time =end_time
+        self.id =id
 
     @classmethod
     def get_all(cls):
@@ -281,6 +289,13 @@ class Schedules(BaseModel):
     def get_future_user_schedules(cls,user):
         session = cls.db.Session()
         schedules = session.query(Schedules).filter_by(user_email=user.email).filter(Schedules.start_time>datetime.now()).all()
+        session.close()
+        return schedules
+    
+    @classmethod
+    def get_all_schedules_minus_user(cls,user):
+        session = cls.db.Session()
+        schedules = session.query(Schedules).filter(Schedules.user_email != user.email).all()
         session.close()
         return schedules
     

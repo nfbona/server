@@ -1,13 +1,12 @@
-from flask import Blueprint,  render_template, request,redirect,url_for
+from flask import Blueprint,  render_template, request,redirect,url_for,jsonify
 from flask_login import current_user,login_required
 from . import sql
-from .auth import get_events
+from .function import get_scheduled_events
 from Modules.forms import UserField
-from .function import login_required_custom
-
+from .function import login_required_custom,is_token_valid,is_current_user_or_admin
+from dateutil.parser import parse
 
 pages = Blueprint("pages", __name__,template_folder='/app/templates', static_folder='/app/static')
-
 
 # the methods that the request can accept
 @pages.route('/', methods=['GET','POST'])
@@ -16,31 +15,26 @@ def home_page():
     relays=sql.Relays.get_all()
     return render_template('Switch.html',relays=relays)
 
-
 #Schedule all events
 @pages.route('/schedule', methods=['GET'])
-@login_required
 @login_required_custom
 def schedule():
-    modified_list= get_events()
-    events_from_user=sql.Users.get_schedules(current_user)
+    modified_list= get_scheduled_events()
+    events_from_user=sql.Schedules.get_user_schedules(current_user)
+    print(modified_list)
+    if events_from_user is None:
+        events_from_user=[]
+    
     if current_user.is_user_role():
+        max_hours=29
         for event in events_from_user:
-            time=(event.end_time-event.start_time).total_seconds() / 3600
+            time=(event.end_time-event.start_time).total_seconds() / 60
             max_hours=max_hours-time
             
-    elif user.is_admin_role():
+    elif current_user.is_admin_role():
         max_hours=999
         
-    return render_template('schedule.html',all_events=modified_list,current_user=current_user.email,hours=max_hours)
-
-
-#Schedule all events in json
-@pages.route('/schedule/all_events', methods=['PULL'])
-@login_required_custom
-def all_events():
-    modified_list= get_events()
-    return(modified_list)
+    return render_template('schedule.html',all_events=modified_list,current_user=current_user,hours=max_hours)
 
 #Schedule all events in json
 @pages.route('/user', methods=['POST','GET'])
@@ -54,14 +48,12 @@ def user():
         form.email.data = ''
     return render_template('userList.html', email=email,form=form)
 
-# 
 @pages.route('/json', methods=['POST'])
 @login_required_custom
 def json():
     if request.method == 'POST':  #this block is only entered when the form is submitted
         rely=sql.Relays.get(request.json['id'])
         if rely.is_wait_time_satisfied():
-            # changing the state of the relay
             rely.state = request.json['value']
             sql.Relays.modify(rely)
             
@@ -76,7 +68,6 @@ def json():
     return relays
 
 # ------------------  NEW TEMPLATES TO BE MADE ------------------ #
-
 @pages.route('/history', methods=['POST','GET'])
 @login_required_custom
 def history():
@@ -87,7 +78,6 @@ def history():
 def configuration():
     return render_template('Configuration.html', userEmail=current_user.email)
 
-
 # database Creation 
 @pages.route('/database', methods=['POST','GET'])
 def database():
@@ -95,3 +85,14 @@ def database():
     roles=sql.Roles.get_all()
     users=sql.Users.get_all()
     return render_template('databse.html',our_roles=roles,our_relays=relays,our_users=users)
+
+@pages.route('/create_event', methods=['POST'])
+def create_event():
+    new_event="1"
+    if is_token_valid and is_current_user_or_admin(request.json['title']):
+        new_event="2"
+        if(sql.Users.get(request.json['title'])):
+            new_event="3"
+            sql.Schedules.new(request.json['title'],parse(request.json['start']),parse(request.json['end']),request.json['groupId'])
+
+    return jsonify({"Created":new_event})
