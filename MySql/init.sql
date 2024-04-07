@@ -2,10 +2,6 @@ CREATE DATABASE IF NOT EXISTS mysql;
 
 USE mysql;
 
-CREATE USER '${DATABASE_USERNAME}'@'${FLASK_APP_IP}' IDENTIFIED BY '${DATABASE_PASSWORD}';
-GRANT ALL PRIVILEGES ON *.* TO '${DATABASE_USERNAME}'@'${FLASK_APP_IP}';
-FLUSH PRIVILEGES;
-
 CREATE TABLE if not exists roles (
     id INT AUTO_INCREMENT,
     date_added DATETIME, 
@@ -18,12 +14,12 @@ CREATE TABLE if not exists users (
     color VARCHAR(20),
     date_added DATETIME, 
     last_login DATETIME, 
-    password_hash VARCHAR(128) NOT NULL, 
+    password_hash VARCHAR(256) NOT NULL, 
     role_id INT NOT NULL,
-    session_id VARCHAR(254),
+    is_active BOOLEAN DEFAULT TRUE,
+    is_session_active BOOLEAN DEFAULT FALSE,
     PRIMARY KEY(email),
     FOREIGN KEY(role_id) REFERENCES roles(id)
-
     );
 
 CREATE TABLE if not exists relays (
@@ -38,8 +34,9 @@ CREATE TABLE if not exists schedule (
     user_email VARCHAR(100), 
     start_time DATETIME, 
     end_time DATETIME, 
+    id VARCHAR(256) NOT NULL, 
     FOREIGN KEY(user_email) REFERENCES users(email),
-    PRIMARY KEY(user_email,start_time)
+    PRIMARY KEY(id)
     );
 
 CREATE TABLE if not exists sessions (

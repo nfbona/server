@@ -17,3 +17,5 @@ function Timer(relay,time) {
        }
     }, 1000);
   };
+
+  
