@@ -1,57 +1,57 @@
-
 {% extends "base/baseNavbar.html" %}
-{% block title %}  {% endblock %}
+{% block title %} {% endblock %}
 {% block content %} 
 
-<div id="container" class="container-fluid" >
-  {%for message in get_flashed_messages()%}
+<div id="container" class="container-fluid">
+  {% for message in get_flashed_messages() %}
   <div class="alert alert-warning alert-dismissible fade show" role="alert">
-    {{message}}
+    {{ message }}
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
   </div> 
-  {%endfor%}
+  {% endfor %}
   <div class="row">
-    <div id="left" class="col-sm" >
+    <div id="left" class="col">
 
-        <div id="left-form" >
-            <h1><span>Router & Switch<span> control</h1>
+        <div id="left-form">
+            <h1><span>Router & Switch</span> control</h1>
             <p>
                 For the access of the switches or router switching on/off, we have to access with a user. 
             </p>
 
             <form action="{{ url_for('auth.login')}}" method="POST">
-              <!-- CRSF token -->
+              <!-- CSRF token -->
               {{ form.hidden_tag() }}
               
-              <!--FORMS-->
-              <!--Email-->
-              {{ form.email( class="form-control", placeholder="name@example.com")}}
+              <!-- FORMS -->
+              <!-- Email -->
+              {{ form.email(class="form-control", placeholder="name@example.com") }}
               
-              <!--Password-->
-              {{ form.password_hash(class="form-control", placeholder="Password")}}   
+              <!-- Password -->
+              {{ form.password_hash(class="form-control", placeholder="Password") }}   
               <br/>
-              <!--Button-->
-              {{form.submit( class="btn btn-info")}}
+              <!-- Button -->
+              {{ form.submit(class="btn btn-info") }}
               
             </form>
 
 
         </div>
         <div id="urvlogo" style="height: 3.5vw;">
-          <a href="https://campusvirtual.urv.cat/local/alternatelogin/index.php"> <img src="{{ url_for('static',filename='style/images/logoURVppd.png') }}"style="height: 3.5vw;">
+          <a href="https://campusvirtual.urv.cat/local/alternatelogin/index.php"> 
+            <img src="{{ url_for('static', filename='style/images/logoURVppd.png') }}" style="height: 3.5vw;">
           </a>
         </div>
 
     </div>
 
-      <!-- This is MOODLE and URV LOGO-->
-    <div id="right" class="col-sm" >
+    <!-- This is MOODLE and URV LOGO -->
+    <div id="right" class="col">
       
-      <div id="right-title" >
-              <a href="https://campusvirtual.urv.cat/local/alternatelogin/index.php">Moodle Urv</a>     
+      <div id="right-title">
+        <a href="https://campusvirtual.urv.cat/local/alternatelogin/index.php">Moodle Urv</a>     
       </div>
       <div id="right-image" style="height: 10vm;">
-          <img id="background-image" src="{{ url_for('static',filename='style/images/1026.jpg') }}" style="width: 75%;background-repeat: no-repeat;position: static;">
+          <img id="background-image" src="{{ url_for('static', filename='style/images/1026.jpg') }}" style="width: 75%;background-repeat: no-repeat;position: static;">
       </div>
 
     </div>
@@ -59,6 +59,4 @@
   </div>
 </div>
 
-
-</div>
 {% endblock %}

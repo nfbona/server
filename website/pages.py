@@ -5,6 +5,7 @@ from .function import get_scheduled_events
 from Modules.forms import UserField
 from .function import login_required_custom,is_token_valid,is_current_user_or_admin
 from dateutil.parser import parse
+from datetime import timedelta
 
 pages = Blueprint("pages", __name__,template_folder='/app/templates', static_folder='/app/static')
 
@@ -15,7 +16,6 @@ def home_page():
     relays=sql.Relays.get_all()
     return render_template('Switch.html',relays=relays)
 
-#Schedule all events
 @pages.route('/schedule', methods=['GET'])
 @login_required_custom
 def schedule():
@@ -36,7 +36,6 @@ def schedule():
         
     return render_template('schedule.html',all_events=modified_list,current_user=current_user,hours=max_hours)
 
-#Schedule all events in json
 @pages.route('/user', methods=['POST','GET'])
 @login_required_custom
 def user():
@@ -56,18 +55,14 @@ def json():
         if rely.is_wait_time_satisfied():
             rely.state = request.json['value']
             sql.Relays.modify(rely)
-            
+            relays = {"Error":"0","relay":str(request.json['id'])}
         else:
-            return {"Error":"1","relay":str(request.json['id'])}
-
-        return {"Error":"0","relay":str(request.json['id'])}
+            relays = {"Error":"1","relay":str(request.json['id'])}
     if request.method == 'GET':
         relays=sql.Relays.get_all()
-        return relays
 
     return relays
 
-# ------------------  NEW TEMPLATES TO BE MADE ------------------ #
 @pages.route('/history', methods=['POST','GET'])
 @login_required_custom
 def history():
@@ -78,7 +73,6 @@ def history():
 def configuration():
     return render_template('Configuration.html', userEmail=current_user.email)
 
-# database Creation 
 @pages.route('/database', methods=['POST','GET'])
 def database():
     relays=sql.Relays.get_all()
@@ -88,11 +82,22 @@ def database():
 
 @pages.route('/create_event', methods=['POST'])
 def create_event():
-    new_event="1"
+    new_event=False
+    
     if is_token_valid and is_current_user_or_admin(request.json['title']):
-        new_event="2"
         if(sql.Users.get(request.json['title'])):
-            new_event="3"
-            sql.Schedules.new(request.json['title'],parse(request.json['start']),parse(request.json['end']),request.json['groupId'])
-
+            new_event=True
+            sql.Schedules.new(request.json['title'], parse(request.json['start']) + timedelta(hours=2),parse(request.json['end']) + timedelta(hours=2),request.json['groupId'])
     return jsonify({"Created":new_event})
+
+@pages.route('/update_event', methods=['POST'])
+def update_event():
+    modified_event=False
+    
+    if is_token_valid and is_current_user_or_admin(request.json['title']):
+        if(sql.Users.get(request.json['title'])):
+            schedule = sql.Schedules.get(request.json['groupId'])
+            schedule.start_time = parse(request.json['start'])
+            schedule.end_time = parse(request.json['end'])
+            modified_event = sql.Schedules.modify(schedule)
+    return jsonify({"Updated":modified_event})

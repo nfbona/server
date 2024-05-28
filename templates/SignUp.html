@@ -1,119 +1,106 @@
-
 {% extends "base/baseNavbar.html" %}
-{% block title %}  {% endblock %}
+{% block title %} {% endblock %}
 {% block content %} 
 
-
-
-
-<div id="container" class="container-fluid" >
+<div id="container" class="container-fluid">
   <div class="row">
-    <div id="left" class="col" >
+    <div id="left" class="col">
 
-          <div id="left-form" >
-              <h1><strong>POST</strong> with password</h1>
-              <p></p>
+      <div id="left-form">
+        <h1><strong>POST</strong> with password</h1>
+        <p></p>
 
-              <form action="{{url_for('auth.signup')}}" method="POST">
-                <!-- CRSF token -->
-                {{ form.hidden_tag() }}
-                
-                <!--FORMS-->
-                <!--Email-->
-                {{ form.email.label(class="form-label")}}
-                {{ form.email(class="form-control", placeholder="name@example.com")}}
-                <!-- -->
-
-                <!--Password-->
-                {{ form.password_hash.label(class="form-label")}}   
-                {{ form.password_hash(class="form-control",  placeholder="Password")}}   
-                <!---->
-                
-
-                 <!--Password-->
-                 {{ form.password_check.label(class="form-label")}}   
-                 {{ form.password_check(class="form-control",  placeholder="Password")}}   
-                 <!---->
-                
-                <br/>
-                <!--Button-->
-                {{form.submit( class="btn btn-info")}}
-                
-              </form>
-
-
+        <form action="{{ url_for('auth.signup') }}" method="POST">
+          <!-- CSRF token -->
+          {{ form.hidden_tag() }}
+          
+          <!-- FORMS -->
+          <!-- Email -->
+          <div class="mb-3">
+            {{ form.email.label(class="form-label") }}
+            {{ form.email(class="form-control", placeholder="name@example.com") }}
           </div>
-  
-          <div id="urvlogo">
-            <a href="https://campusvirtual.urv.cat/local/alternatelogin/index.php"> <img src="{{ url_for('static',filename='style/images/logoURVppd.png') }}">
-            </a>
-          </div>
-          <div id="messages">
-            {%for message in get_flashed_messages()%}
-              {%if message == "Usuari modificat satisfactoriament." or message == "Usuari deletejat satisfactoriament." or message == "Usuari creat satisfactoriament."%}
-              <div class="alert alert-success alert-dismissible fade show" role="alert">
-                {{message}}
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                  <span aria-hidden="true">&times;</span>
-                </button>               
-              </div> 
-              {%else%}
-              {%if message == "Operació no valida."%}
-              <div class="alert alert-primary alert-dismissible fade show" role="alert">
-                {{message}}
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                  <span aria-hidden="true">&times;</span>
-                </button>              
-              </div> 
-              {%else%}
-              <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                {{message}}
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                  <span aria-hidden="true">&times;</span>
-                </button>               
-              </div>              
-              {%endif%}
-              {%endif%}
-              {%endfor%}
 
+          <!-- Password -->
+          <div class="mb-3">
+            {{ form.password_hash.label(class="form-label") }}   
+            {{ form.password_hash(class="form-control", placeholder="Password") }}   
           </div>
+
+          <!-- Password check -->
+          <div class="mb-3">
+            {{ form.password_check.label(class="form-label") }}   
+            {{ form.password_check(class="form-control", placeholder="Password") }}   
+          </div>
+
+          <!-- Button -->
+          {{ form.submit(class="btn btn-info") }}
+          
+        </form>
       </div>
 
-     
-      <div id="right" class="col-8" >
-          <h1 style="display: flex;justify-content: center;">List of Users</h1>
-          <div id="right-image" style="height: 100%;">
-          
-          
-          
-            <table class="table">
-              <thead>
-                <tr>  
-                  <th>Email</th>
-                  <th>Password</th>
-                  <th>Role</th>
-                  <th>Active</th>
-                  <th>Last Login</th>
-                </tr>
-              </thead>
-              {% for our_user in our_users %}
+      <div id="urvlogo">
+        <a href="https://campusvirtual.urv.cat/local/alternatelogin/index.php"> 
+          <img src="{{ url_for('static', filename='style/images/logoURVppd.png') }}">
+        </a>
+      </div>
+
+      <div id="messages">
+        {% for message in get_flashed_messages() %}
+          {% if message in ["Usuari modificat satisfactoriament.", "Usuari deletejat satisfactoriament.", "Usuari creat satisfactoriament."] %}
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% elif message == "Operació no valida." %}
+            <div class="alert alert-primary alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% else %}
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <div id="right" class="col-8">
+      <h1 style="display: flex;justify-content: center;">List of Users</h1>
+      <div id="right-image" style="height: 100%;">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Password</th>
+              <th>Role</th>
+              <th>Active</th>
+              <th>Last Login</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for our_user in our_users %}
               <tr>
-                <td>{{our_user.email}}</td>
-                <td><a class="btn btn-primary" href="{{url_for('auth.update',email=our_user.email)}}"> Update </a> </td>
-                <td>{{our_user.role_id}}</td>
-                <td><form action="{{url_for('auth.delete',email=our_user.email)}}" method="post"><button type="submit" class="btn btn-danger">Delete</button></form></td>
-                <td>{{our_user.last_login}}</td>
+                <td>{{ our_user.email }}</td>
+                <td>
+                  <a class="btn btn-primary" href="{{ url_for('auth.update', email=our_user.email) }}">Update</a>
+                </td>
+                <td>{{ our_user.role_id }}</td>
+                <td>
+                  <form action="{{ url_for('auth.delete', email=our_user.email) }}" method="post">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                  </form>
+                </td>
+                <td>{{ our_user.last_login }}</td>
               </tr>
-              {% endfor %}
-            </table>
-
-
-
-
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
+    </div>
   </div>
 </div>
 
-
-</div>
 {% endblock %}

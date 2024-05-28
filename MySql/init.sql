@@ -39,14 +39,55 @@ CREATE TABLE if not exists schedule (
     PRIMARY KEY(id)
     );
 
-CREATE TABLE if not exists sessions (
-    user_email VARCHAR(100), 
-    date_created DATETIME NOT NULL, 
-    date_expiry DATETIME NOT NULL, 
+CREATE TABLE if not exists signin_request ( 
+    date DATETIME, 
+    id VARCHAR(256) NOT NULL, 
+    user_email VARCHAR(100),
     FOREIGN KEY(user_email) REFERENCES users(email),
-    PRIMARY KEY(user_email)
+    PRIMARY KEY(id)
     );
 
+CREATE TABLE if not exists log_users (
+    user_email VARCHAR(100), 
+    action VARCHAR(100), 
+    id INT AUTO_INCREMENT,  
+    datetime DATETIME, 
+    FOREIGN KEY(user_email) REFERENCES users(email),
+    PRIMARY KEY(id)
+    );
+
+CREATE TABLE if not exists log_relays (
+    user_email VARCHAR(100), 
+    action VARCHAR(100), 
+    id INT AUTO_INCREMENT,  
+    id_relay INT ,  
+    datetime DATETIME,  
+    FOREIGN KEY(user_email) REFERENCES users(email),
+    FOREIGN KEY(id_relay) REFERENCES relays(id),
+    PRIMARY KEY(id)
+    );
+
+
+CREATE TABLE if not exists log_schedules (
+    user_email VARCHAR(100), 
+    action VARCHAR(100), 
+    id INT AUTO_INCREMENT,  
+    datetime DATETIME, 
+    start_time DATETIME, 
+    end_time DATETIME, 
+    FOREIGN KEY(user_email) REFERENCES users(email),
+    PRIMARY KEY(id)
+    );
+
+CREATE TABLE if not exists log_signin_request (
+    user_accepter VARCHAR(100), 
+    user_email VARCHAR(100), 
+    action VARCHAR(100), 
+    id INT AUTO_INCREMENT,  
+    datetime DATETIME, 
+    FOREIGN KEY(user_email) REFERENCES users(email),
+    PRIMARY KEY(id)
+    );
 
 INSERT INTO roles (id, date_added, name)
 VALUES 

@@ -1,137 +1,88 @@
-
 {% extends "base/baseNavbar.html" %}
-{% block title %}  {% endblock %}
+{% block title %} {% endblock %}
 {% block content %} 
 
-<div id="container" class="container-fluid" >
+<div id="container" class="container-fluid">
   <div class="row">
-    <div id="left" class="col" >
-          <h1>LEFT</h1>
-          <table class="table table-striped">
-            <tr>
-              <th>
-                Router
-              </th>
-              <th>
-                Time to modify
-              </th>
-            </tr>
+    <div id="left" class="col">
+      <h1>LEFT</h1>
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Router</th>
+            <th>Time to modify</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for relay in relays %}
+          <tr>
+            <td>
+              <div class="form-check">
+                <input id="checkbox{{ relay.id }}" class="form-check-input" type="checkbox" value="{{ relay.id }}" onclick="disableCheckbox(this)">
+                <label class="form-check-label" for="checkbox{{ relay.id }}">{{ relay.name }}</label>
+              </div>
+            </td>
+            <td>
+              <p style="display:inline;" id="timer{{ relay.id }}"></p>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div id="right" class="col-3">
+      <h1>Right</h1>
+    </div>
+  </div>
+</div>
 
-
-            {% for relay in relays %}
-            <tr>
-              <td>
-              <p style="display:inline;">  <input id="checkbox{{relay.id}}" type="checkbox" value="{{relay.id}}" onclick="disable" >
-                {{relay.name}} 
-              </p>
-              </td>
-              <td>
-                <p style="display:inline;" id="timer{{relay.id}}"></p>
-              </td>
-            </tr>
-            {% endfor%}
-            
-            
-          </div>
-          
-          <!-- This is MOODLE and URV LOGO-->
-          <div id="right" class="col-3" >
-            <h1>Right</h1>
-          </div>
-        </div>
-      </div>
-      
 <script>
-  var timer=10
-// ------------  INPUT REQUEST -------------------
-  const cbox = document.getElementsByTagName("input");
-  let times
-  let checked
-  //TIMER function
-// disable checkbox
+  var timer = 10;
 
-
-  function Timer1(relay,time,checkid) 
-  {
-    let minute = parseInt(time/60);
-    let sec = time%60;
-    document.getElementById(relay).innerHTML = minute+" : "+(sec+1);
-    var name=setInterval(function (){
-       
-       document.getElementById(relay).innerHTML = minute+" : "+sec;
-       if (sec <= 0) 
-       {
-         if (minute <= 0) 
-         {
-           document.getElementById(checkid).disabled=false;
-           clearInterval(name);
-           return 0 ;
-         }
-         else
-         {
+  function Timer1(relay, time, checkid) {
+    let minute = parseInt(time / 60);
+    let sec = time % 60;
+    document.getElementById(relay).innerHTML = minute + " : " + (sec + 1);
+    var name = setInterval(function() {
+      document.getElementById(relay).innerHTML = minute + " : " + sec;
+      if (sec <= 0) {
+        if (minute <= 0) {
+          document.getElementById(checkid).disabled = false;
+          clearInterval(name);
+          return 0;
+        } else {
           minute--;
           sec = 60;
-         }
         }
-        sec--;
-      }, 1000);
+      }
+      sec--;
+    }, 1000);
   };
-  
-  // -----------------  CHECKBOX REQUEST ------------------
 
-  for (let i = 0; i < cbox.length; i++) 
-  {
-    cbox[i].addEventListener("click", function() 
-    {
+  function disableCheckbox(checkbox) {
+    let aux = "timer" + checkbox.value;
+    let checkboxid = "checkbox" + checkbox.value;
+    Timer1(aux, timer, checkboxid);
+    checkbox.disabled = true;
 
-      // Start timer
-      let aux = "timer" + cbox[i].value
-      let checkboxid = "checkbox" + cbox[i].value
-      Timer1(aux, timer, checkboxid);
-
-      // make call backend
-
-      cbox[i].disabled=true;
-      // asyncronous javascript and xml, to interact to the backend basically
-      $.ajax({
-        url: "/json",
-        type: "POST",
-        data: JSON.stringify(
-          {
-            "id": cbox[i].value,
-            "value": cbox[i].checked
-          }),
-        contentType: "application/json; charset=utf-8",
-        dataType: "json",
-        success: function (data) {
-          //console.log(data);
-        },
-        error: function (xhr, status, error) {
-          console.log('Error: ' + error.message);
-        }
-      });
-
+    // AJAX call to backend
+    $.ajax({
+      url: "/json",
+      type: "POST",
+      data: JSON.stringify({
+        "id": checkbox.value,
+        "value": checkbox.checked
+      }),
+      contentType: "application/json; charset=utf-8",
+      dataType: "json",
+      success: function(data) {
+        // console.log(data);
+      },
+      error: function(xhr, status, error) {
+        console.log('Error: ' + error.message);
+      }
     });
   }
-
-  // -----------------  TIMER INIT ------------------
-  function TimerInit()
-  {
-    for (let i = 0; i < cbox.length; i++) 
-    {
-      let aux = "timer" + cbox[i].value
-      let checkboxid = "checkbox" + cbox[i].value
-      cbox[i].disabled=true;
-      Timer1(aux, timer, checkboxid);
-    }
-  }
-
-
-
-  //TimerInit()
-
 </script>
-
-
 
 {% endblock %}

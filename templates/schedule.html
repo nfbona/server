@@ -2,8 +2,9 @@
 {% extends "base/baseNavbar.html" %}
 {% block title %}  {% endblock %}
 {% block content %} 
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+{% from "aux/macros.html" import modal %}
+
 <!--
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css">
 -->
@@ -15,206 +16,166 @@
   }
 </style>
 
-
-<script>
-  
-  function createEvent(selectionInfo){
-    return {
-      title: '{{current_user.email}}',
-      start: selectionInfo.start,
-      end: selectionInfo.end,
-      backgroundColor:'rgb({{current_user.color}})',
-      editable: true,
-      groupId:'{{current_user.email}}' + Math.random()
-    };
-  }
-  
-  function newEvent(selectionInfo){
-    event = createEvent(selectionInfo);
-    var result=ajaxPostRequest("{{url_for('pages.create_event')}}",event);
-    
-    if(result['Created']){
-      console.log(event);
-      return event;
-    }else{//TEMPORAL
-      return event;
-    }
-  }
-
-  function changeEvent(info){
-    
-  }
-
-  function ajaxGetRequest(url,object){
-      // Make AJAX request to CreateEvent
-      var responseContent;
-      $.ajax({
-          url: url,  // URL of the route
-          type: 'GET',  // HTTP method
-          async: false,
-          success: function(response) {
-            responseContent=response;
-          },
-          error: function(errorThrown) {
-              console.error(errorThrown);
-              responseContent=errorThrown;
-          }
-      });
-      console.log(responseContent);
-      return responseContent;
-    }
-  
-  function ajaxPostRequest(url,object){
-      // Make AJAX request to CreateEvent
-      var responseContent;
-      $.ajax({
-          url: url,  // URL of the route
-          contentType: 'application/json',  // content type
-          type: 'POST',  // HTTP method
-          data: JSON.stringify(object),
-          async: false,
-          success: function(response){
-            responseContent=response;
-          },
-          error: function(errorThrown){
-              console.error(errorThrown);
-              responseContent=null;
-          }
-      });
-
-      console.log(responseContent);
-      return responseContent;
-    }
-  
-  document.addEventListener('DOMContentLoaded', function() {
-    var calendarEl = document.getElementById('calendar');
-
-    var calendar = new FullCalendar.Calendar(calendarEl, {
-      //Aspect ratio
-      aspectRatio: 1.5,
-      // en catala
-      locale: 'ca',
-      // See operations and healthchecks of the schedule
-      weekends:true,
-      firstDay:1,
-      allDaySlot:false,
-      dayHeaderFormat:{ weekday: 'long' },
-      nowIndicator:true,
-
-      // SELECTABLE
-      selectable: true,
-      selectMirror:true,
-      unselectAuto:true,
-      selectOverlap:false,
-      stickyHeaderDates:true,
-      eventOverlap:false,
-      //TO BE TESTED
-
-      themeSystem: 'bootstrap5',
-      dayMaxEvents: true,
-      headerToolbar: {
-        left: 'prev,next today',
-        center: 'title',
-        right: 'timeGridWeek,listWeek'
-      },
-      events:
-        [
-        {% for event in all_events %}
-          {
-            groupId: "{{event.groupId}}",
-            title: "{{event.title}}" , 
-            start:"{{event.start}}", 
-            end:"{{event.end}}",
-            editable:{{event.editable}},
-            backgroundColor:"rgb({{event.color}})"
-          }{% if not loop.last %},{% endif %}
-        {% endfor %}
-        ],
-        
-        eventChange: function(info){
-          alert('TItle: '+ info.event.title+', Start: '+info.event.start+', End: '+info.event.end)
-        },
-        eventClick: function(info){
-          alert('TItle: '+ info.event.title+', Start: '+info.event.start+', End: '+info.event.end)
-        },/*
-        eventDrop :function(info){
-          alert('TItle: '+ info.event.title+', Start: '+info.event.start+', End: '+info.event.end)
-        },*/
-        select: function(selectionInfo) {
-          //if (
-            if(confirm("Estàs segur que vols fer un booking d'aquestes hores?\n Inici: "+selectionInfo.startStr+' Final:'+selectionInfo.endStr))
-            {
-              var event = newEvent(selectionInfo);
-              console.log(event);
-              calendar.addEvent(event);
-            }{
-              calendar.unselect();
-            }
-            /*) {
-            var newEvent = {
+<body>
+  <script>
+      function newEvent(selectionInfo) {
+          return {
               title: '{{current_user.email}}',
               start: selectionInfo.start,
               end: selectionInfo.end,
-              backgroundColor:'rgb({{current_user.color}})',
+              backgroundColor: 'rgb({{current_user.color}})',
               editable: true,
-              groupId:'{{current_user.email}}'
-            };
+              groupId: '{{current_user.email}}' + Math.random()
+          };
+      }
+
+      function newEventBackend(selectionInfo) {
+          event = newEvent(selectionInfo);
+          var result = ajaxPostRequest("{{url_for('pages.create_event')}}", event);
+          if (result['Created']) {
+              return event;
           } else {
-  
-          }*/
-          // You can create a new event here using start and end times
+              return null;
+          }
+      }
 
-          
-          // Add the new event to the calendar
-          
-        },
-    
+      function modifyEventBackend(info) {
+          eventModified = info.event;
+          var result = ajaxPostRequest("{{url_for('pages.update_event')}}", eventModified);
+          if (result['Updated']) {
+              return eventModified;
+          } else {
+              return null;
+          }
+      }
 
-      initialView: 'timeGridWeek'
-    });
-    calendar.render();
-  });
+      function ajaxGetRequest(url, object) {
+          var responseContent;
+          $.ajax({
+              url: url,
+              type: 'GET',
+              async: false,
+              success: function (response) {
+                  responseContent = response;
+              },
+              error: function (errorThrown) {
+                  console.error(errorThrown);
+                  responseContent = errorThrown;
+              }
+          });
+          console.log(responseContent);
+          return responseContent;
+      }
 
-</script>
+      function ajaxPostRequest(url, object) {
+          var responseContent;
+          $.ajax({
+              url: url,
+              contentType: 'application/json',
+              type: 'POST',
+              data: JSON.stringify(object),
+              async: false,
+              success: function (response) {
+                  responseContent = response;
+              },
+              error: function (errorThrown) {
+                  console.error(errorThrown);
+                  responseContent = null;
+              }
+          });
+          console.log(responseContent);
+          return responseContent;
+      }
 
+      document.addEventListener('DOMContentLoaded', function () {
+          var calendarEl = document.getElementById('calendar');
 
-  
-      <div class="container-fluid"  >
-          <h1 style="display: flex;justify-content: center;">Schedule</h1>
-          <div class="row text-center" >
-            
-            <div class="col-9">
-              <div id="calendar" > </div>
-            </div>
-            <div class="col-3">
-              <div id="userConfig" style="margin-bottom:1em;height:350px;overflow:auto;padding:1em;"> 
-                <h2 class="text-center">User information {{current_user.email}}</h2>
-                <div id="llistaEvents">
-                  
-                  <div>
-                    <span>"User email: {{current_user.email}}"</span>
+          var calendar = new FullCalendar.Calendar(calendarEl, {
+              aspectRatio: 1,
+              locale: 'ca',
+              weekends: true,
+              firstDay: 1,
+              allDaySlot: false,
+              dayHeaderFormat: { weekday: 'long' },
+              nowIndicator: true,
+              selectable: true,
+              selectMirror: true,
+              unselectAuto: true,
+              selectOverlap: false,
+              stickyHeaderDates: true,
+              eventOverlap: false,
+              themeSystem: 'bootstrap5',
+              dayMaxEvents: true,
+              headerToolbar: {
+                  left: 'prev,next today',
+                  center: 'title',
+                  right: 'timeGridWeek,listWeek'
+              },
+              events: [
+                  {% for event in all_events %}
+                      {
+                          groupId: "{{event.groupId}}",
+                          title: "{{event.title}}",
+                          start: "{{event.start}}",
+                          end: "{{event.end}}",
+                          editable: {{event.editable}},
+                          backgroundColor: "rgb({{event.color}})"
+                      }{% if not loop.last %},{% endif %}
+                  {% endfor %}
+              ],
+              eventChange: function (info) {
+                  if (confirm("Estàs segur que vols modificar aquesta reserva?\n Inici: " + info.event.startStr + ' Final: ' + info.event.endStr)) {
+                      var event = modifyEventBackend(info);
+                      console.log(event);
+                  } else {
+                      info.revert();
+                  }
+              },
+              eventClick: function (info) {
+                  alert('GROUPID' + info.event.groupId + ' TItle: ' + info.event.title + ', Start: ' + info.event.start + ', End: ' + info.event.end);
+              },
+              select: function (selectionInfo) {
+                  if (confirm("Estàs segur que vols fer un booking d'aquestes hores?\n Inici: " + selectionInfo.startStr + ' Final: ' + selectionInfo.endStr)) {
+                      var event = newEventBackend(selectionInfo);
+                      console.log(event);
+                      calendar.addEvent(event);
+                  } else {
+                      calendar.unselect();
+                  }
+              },
+              initialView: 'timeGridWeek'
+          });
+          calendar.render();
+      });
+  </script>
 
-                  </div>
-                  <div>
-                    <span>"Hours restants: {{hours}}"</span>
-
-                  </div>
-                  
-
-
-
-                </div>
-            </div>
-
-
-
+  <div class="container-fluid">
+      <h1 class="text-center">Schedule</h1>
+      <div class="row text-center">
+          <div class="col-9">
+              <div id="calendar"></div>
           </div>
-
-
-           
+          <div class="col-3">
+              <div id="userConfig" class="mb-4 p-3" style="height: 350px; overflow: auto;">
+                  <h2 class="text-center">User information {{current_user.email}}</h2>
+                  <div id="llistaEvents">
+                      <div>
+                          <span>User email: {{current_user.email}}</span>
+                      </div>
+                      <div>
+                          <span>Hours restants: {{hours}}</span>
+                      </div>
+                      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#delete">
+                          Launch demo modal
+                      </button>
+                  </div>
+              </div>
+          </div>
+      </div>
   </div>
 
+  {{ modal('delete', 'Modal Title 1', 'Modal Body 1',  'Delete','Cancel') }}
 
-
-</div>
+</body>
+</html>
 {% endblock %}

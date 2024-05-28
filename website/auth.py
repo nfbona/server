@@ -49,7 +49,6 @@ def signup():
 
     form.clean() 
     return render_template('SignUp.html', form=form, our_users=our_users)
-
  
 @auth.route('/user/update/<string:email>', methods=['GET'])
 def update(email):

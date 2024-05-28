@@ -6,10 +6,9 @@ import random
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker,scoped_session
 from sqlalchemy.pool import QueuePool
-from flask_login import login_user,logout_user,current_user
-from flask import session
+from flask_login import login_user,logout_user
 from sqlalchemy.ext.declarative import declarative_base # allows to make a class that maps to a table
-
+import html
 # initialize the base class ootb ORM
 Base = declarative_base()
 
@@ -35,7 +34,6 @@ class BaseModel(db.Model, Base):
     
     @classmethod
     def new(cls, object):
-        print("Creating new object ",object)
         session = cls.db.Session()
         session.add(object)
         session.commit()
@@ -44,7 +42,6 @@ class BaseModel(db.Model, Base):
     
     @classmethod
     def new(cls,*args):
-        print("Creating new class ",*args)
         session = cls.db.Session()
         session.add(cls(*args))
         session.commit()
@@ -135,6 +132,7 @@ class Users(UserMixin,BaseModel):
     def color(self,color):
         self._color=color    
         
+    # mandatory method for flask login
     def get_id(self):
            return self.email
 
@@ -298,7 +296,21 @@ class Schedules(BaseModel):
         schedules = session.query(Schedules).filter(Schedules.user_email != user.email).all()
         session.close()
         return schedules
+
+    @classmethod
+    def get(cls,id):
+        session = cls.db.Session()
+        schedules = session.query(Schedules).filter(Schedules.id == id).first()
+        session.close()
+        return schedules
     
+class SignInRequest(BaseModel):
+    __tablename__ = 'signin_request'
+    date = db.Column('date',db.DateTime, default=datetime.now)
+    user_email = db.Column('user_email',db.String(100), db.ForeignKey('users.email'))
+    id = db.Column('id',db.Integer, primary_key=True)
+    
+
 class SQLClass:
     def __init__(self, db_password):
         self.uri=f"mysql+pymysql://root:{db_password}@mysql/mysql"
@@ -326,5 +338,30 @@ class SQLClass:
         self.Session.remove()
         return True
 
+class Log(BaseModel):
+    __abstract__ = True
+    datetime = db.Column('datetime',db.DateTime, nullable=False, default=datetime.now)
+    id = db.Column('id',db.Integer, primary_key=True)
+    action = db.Column('action',db.String(100), nullable=False)
     
+class LogUsers(Log):
+    __tablename__ = 'log_users'
+    user_email = db.Column('user_email',db.String(100), db.ForeignKey('users.email'))
+
+class LogRelays(Log):
+    __tablename__ = 'log_relays'
+    user_email = db.Column('user_email',db.String(100),  db.ForeignKey('users.email'))
+    relay_id = db.Column('relay_id',db.Integer,  db.ForeignKey('relays.id'))
+    
+class LogSchedules(Log):
+    __tablename__ = 'log_schedules'
+    user_email = db.Column('user_email',db.String(100), db.ForeignKey('users.email'))
+    schedule_id = db.Column('schedule_id',db.String(256),  db.ForeignKey('schedule.id'))
+    start_time = db.Column('start_time',db.DateTime, nullable=False, default=datetime.now)
+    end_time =db.Column('end_time',db.DateTime, nullable=False, default=datetime.now)
+
+class LogSignInRequest(Log):
+    __tablename__ = 'log_signin_request'
+    user_accepter = db.Column('user_accepter',db.String(100),  db.ForeignKey('users.email'))
+    email = db.Column(db.String(100), nullable=False)
     
