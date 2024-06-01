@@ -4,7 +4,7 @@ from dotenv import dotenv_values
 from datetime import timedelta
 
 from flask_login import LoginManager, current_user
-from Modules.models import db, SQLClass
+from Modules.models import db, SQLClass,CustomAnonymousUser
 
 # Set up SQLAlchemy engine and session
 sql = SQLClass(dotenv_values('.env')['MYSQL_ROOT_PASSWORD'])
@@ -42,6 +42,7 @@ def init_blueprints(app):
 # Function to initialize login manager
 def init_login_manager(app):
     login_manager = LoginManager()
+    login_manager.anonymous_user = CustomAnonymousUser
     login_manager.login_view = 'pages.home_page'
     login_manager.init_app(app)
     app.config['SESSION_COOKIE_SECURE'] = True

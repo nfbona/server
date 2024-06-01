@@ -4,6 +4,7 @@ from wtforms import  SubmitField,PasswordField,EmailField,PasswordField
 from wtforms.validators import DataRequired,Email,EqualTo
 from flask import flash
 from website import sql
+import re
 
 # Creation or updating
 
@@ -62,3 +63,10 @@ class LogInForm(FormBase):
 class UserField(FormBase):
         email=EmailField("Email",validators=[Email()])
         submit = SubmitField('Submit')
+
+class validator():
+        def is_email(email):
+                email_regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+                if not re.match(email_regex, email):
+                        return False
+                return True

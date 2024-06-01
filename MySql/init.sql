@@ -39,11 +39,11 @@ CREATE TABLE if not exists schedule (
     PRIMARY KEY(id)
     );
 
-CREATE TABLE if not exists signin_request ( 
+CREATE TABLE if not exists signup_request ( 
     date DATETIME, 
-    id VARCHAR(256) NOT NULL, 
+    id int AUTO_INCREMENT, 
     user_email VARCHAR(100),
-    FOREIGN KEY(user_email) REFERENCES users(email),
+    password VARCHAR(256) NOT NULL, 
     PRIMARY KEY(id)
     );
 
@@ -60,10 +60,10 @@ CREATE TABLE if not exists log_relays (
     user_email VARCHAR(100), 
     action VARCHAR(100), 
     id INT AUTO_INCREMENT,  
-    id_relay INT ,  
+    relay_id INT ,  
     datetime DATETIME,  
     FOREIGN KEY(user_email) REFERENCES users(email),
-    FOREIGN KEY(id_relay) REFERENCES relays(id),
+    FOREIGN KEY(relay_id) REFERENCES relays(id),
     PRIMARY KEY(id)
     );
 
@@ -73,19 +73,21 @@ CREATE TABLE if not exists log_schedules (
     action VARCHAR(100), 
     id INT AUTO_INCREMENT,  
     datetime DATETIME, 
+    schedule_id VARCHAR(256) NOT NULL, 
     start_time DATETIME, 
     end_time DATETIME, 
+    FOREIGN KEY(schedule_id) REFERENCES schedule(id),
     FOREIGN KEY(user_email) REFERENCES users(email),
     PRIMARY KEY(id)
     );
 
-CREATE TABLE if not exists log_signin_request (
+CREATE TABLE if not exists log_signup_request (
     user_accepter VARCHAR(100), 
     user_email VARCHAR(100), 
     action VARCHAR(100), 
     id INT AUTO_INCREMENT,  
     datetime DATETIME, 
-    FOREIGN KEY(user_email) REFERENCES users(email),
+    FOREIGN KEY(user_accepter) REFERENCES users(email),
     PRIMARY KEY(id)
     );
 
@@ -115,3 +117,20 @@ VALUES
 ON DUPLICATE KEY UPDATE
     id = VALUES(id);
 
+
+-- CLEAN UP --
+-- Delete all records older than 30 days
+DELETE FROM signup_request WHERE date < NOW() - INTERVAL 30 DAY;
+
+DELETE FROM users WHERE date_added < NOW() - INTERVAL 30 DAY AND is_active = false;
+
+DELETE FROM schedule WHERE end_time < NOW() - INTERVAL 30 DAY;
+
+-- Delete all logs older than 3 months
+DELETE FROM log_signup_request WHERE datetime < NOW() - INTERVAL 3 MONTH;
+
+DELETE FROM log_schedules WHERE datetime < NOW() - INTERVAL 3 MONTH;
+
+DELETE FROM log_relays WHERE datetime < NOW() - INTERVAL 3 MONTH;
+
+DELETE FROM log_users WHERE datetime < NOW() - INTERVAL 3 MONTH;

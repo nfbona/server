@@ -1,10 +1,10 @@
 from flask import Blueprint,request, render_template, redirect, url_for, flash,make_response
 # User Login
 from . import sql
-from Modules.forms import LogInForm,PasswordForm
+from Modules.forms import LogInForm,PasswordForm,validator
 from flask import Blueprint
 from flask_login import current_user
-from .function import is_current_user_or_admin,login_required_custom
+from .function import login_required_custom,login_required_admin
 
 auth = Blueprint("auth", __name__, template_folder='/app/templates', static_folder='/app/static')
 
@@ -12,6 +12,7 @@ auth = Blueprint("auth", __name__, template_folder='/app/templates', static_fold
 def logout():
     response= make_response(redirect(url_for('auth.login')))
     if current_user.is_authenticated:
+        sql.LogUsers.new(current_user.email,'Logout')
         sql.Users.logout(current_user)
     return response
 
@@ -27,6 +28,7 @@ def login():
             user = sql.Users.get(form.email.data)
             if user and user.checkPass(form.password_hash.data):
                 sql.Users.login(user)
+                sql.LogUsers.new(current_user.email,'Login')
             else:
                 flash('Invalid username or password')
                 return redirect(url_for('auth.login'))
@@ -36,23 +38,26 @@ def login():
 @auth.route('/user/signup', methods=['POST','GET'])
 def signup():
     form = PasswordForm()
-    our_users=sql.Users.get_all()
+    our_SignUprequest=sql.SignUpRequest.get_all()
     
     if request.method == 'POST':
         if form.validate_on_submit(): 
             # Admin role or same user
             if(form.validations()):
-                sql.Users.new(form.email.data,form.password_hash.data)
+                sql.SignUpRequest.new(form.email.data,form.password_hash.data)
+                sql.LogSignUpRequest.new('',form.email.data,'Request')
+                flash('Request done to admin.')
             else:
                 flash('User already registered.')
             return redirect(url_for('auth.signup'))
 
     form.clean() 
-    return render_template('SignUp.html', form=form, our_users=our_users)
+    return render_template('SignUp.html', form=form, our_SignUprequest=our_SignUprequest)
  
 @auth.route('/user/update/<string:email>', methods=['GET'])
+@login_required_custom
 def update(email):
-    if(is_current_user_or_admin(str(email))):
+    if(current_user.is_current_user_or_admin(str(email))):
         form = PasswordForm()
         name_update= sql.Users.get(email)
         #Validate form
@@ -61,14 +66,16 @@ def update(email):
     return redirect(url_for('auth.signup'))
     
 @auth.route('/user/update/<string:email>', methods=['POST'])
+@login_required_custom
 def updatePOST(email):
     form = PasswordForm()
     if form.validate_on_submit():
         email=str(email)
-        if(is_current_user_or_admin(str(email))):
+        if(current_user.is_current_user_or_admin(email)):
             user=sql.Users.get(email)
             user.password_hash=form.password_hash.data
             sql.Users.modify(user)
+            sql.LogUsers.new(current_user.email,'Update password')
             flash("Usuari modificat satisfactoriament.")
         
     form.clean()
@@ -77,8 +84,9 @@ def updatePOST(email):
 @auth.route('/user/delete/<string:email>', methods=['POST'])
 @login_required_custom
 def delete(email):
-    if(is_current_user_or_admin(str(email))):
+    if(current_user.is_current_user_or_admin(email)):
         user=sql.Users.get(email) 
+        sql.LogUsers.new(current_user.email,'Delete user')
         #Validate form
         flash('Usuari borrat satisfactoriament.')
         sql.Users.delete(user)
@@ -93,3 +101,31 @@ def delete(email):
 
     return redirect(url_for('auth.signup'))
 
+
+@login_required_admin
+@auth.route('/user/signuprequest/accept/<string:email>', methods=['GET'])
+def signuprequestaccept(email):
+    if validator.is_email(email):
+        user_SignUpRequest=sql.SignUpRequest.get(email)
+        sql.Users.new(email,user_SignUpRequest.password)
+        sql.LogSignUpRequest.new(current_user.email,email,'Accepted')
+        sql.LogUsers.new(current_user.email,'Create user')
+        sql.SignUpRequest.delete(user_SignUpRequest)
+        flash('Accepted user: '+email)
+    else:
+        flash('Invalid email.')
+        
+    return redirect(url_for('auth.signup'))
+
+@login_required_admin
+@auth.route('/user/signuprequest/delete/<string:email>', methods=['GET'])
+def signuprequestdeny(email):
+    if validator.is_email(email):
+        user_SignUpRequest=sql.SignUpRequest.get(email)
+        sql.LogSignUpRequest.new(current_user.email,email,'Denied')
+        sql.SignUpRequest.delete(user_SignUpRequest)
+        flash('Denied user: '+email)
+    else:
+        flash('Invalid email.')
+        
+    return redirect(url_for('auth.signup'))

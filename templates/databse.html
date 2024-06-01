@@ -5,30 +5,41 @@
 
 
 <div id="container" class="container-fluid" >
-  <div class="row">
-    
-    <div id="left" class="col" >
-      <h1 style="display: flex;justify-content: center;">List of Users</h1>
-      <table class="table">
+  <ul class="nav nav-tabs" id="myTab" role="tablist">
+    <li class="nav-item" role="presentation">
+      <a class="nav-link active" id="users-tab" data-bs-toggle="tab" href="#users" role="tab" aria-controls="users" aria-selected="true">Users</a>
+    </li>
+    <li class="nav-item" role="presentation">
+      <a class="nav-link" id="roles-tab" data-bs-toggle="tab" href="#roles" role="tab" aria-controls="roles" aria-selected="false">Roles</a>
+    </li>
+    <li class="nav-item" role="presentation">
+      <a class="nav-link" id="roles-tab" data-bs-toggle="tab" href="#relays" role="tab" aria-controls="relays" aria-selected="false">Relays</a>
+    </li>
+  </ul>
+  <div class="tab-content" id="myTabContent">
+    <div class="tab-pane fade show active" id="users" role="tabpanel" aria-labelledby="users-tab">
+        <table id="tableusers" class="table-heading table table-rounded" style="width:100%;">
         <thead>
           <tr> 
-            <th>email</th>
-            <th>roles_id</th>
+            <th>Email</th>
+            <th>Role id</th>
+            <th>Last login</th>
+            <th>Color</th>
           </tr>
         </thead>
         {% for our_user in our_users %}
         <tr>
         <td>{{our_user.email}}</td>
         <td>{{our_user.role_id}}</td>
+        <td>{{our_user.last_login}}</td>
+        <td><div class="color-box" style="background-color: rgb({{our_user.color}});"></div>
+        </td>
         </tr>
         {% endfor %}
       </table>
     </div>
-
-    <div id="midle" class="col" >
-      <h1 style="display: flex;justify-content: center;">List of Roles</h1>
-          
-      <table class="table">
+    <div class="tab-pane fade" id="roles" role="tabpanel" aria-labelledby="roles-tab">
+      <table id="tableroles" class="table-heading table table-rounded" style="width:100%;">
         <thead>
           <tr>  
             <th>Id</th>
@@ -42,35 +53,47 @@
         </tr>
         {% endfor %}
       </table>
-   
-
-      </div>
-      
-      <div id="right" class="col-8" >
-          <h1 style="display: flex;justify-content: center;">List of Relays</h1>
-          
-            <table class="table">
-              <thead>
-                <tr>  
-                  <th>Id</th>
-                  <th>state</th>
-                  <th>DateTime</th>
-                  <th>name</th>
-                </tr>
-              </thead>
-              {% for our_relay in our_relays %}
-              <tr>
-                <td>{{our_relay.id}}</td>
-                <td>{{our_relay.state}}</td>
-                <td>{{our_relay.date_modified}}</td>
-                <td>{{our_relay.name}}</td>
-              </tr>
-              {% endfor %}
-            </table>
-       </div>
+    </div>
+    <div class="tab-pane fade" id="relays" role="tabpanel" aria-labelledby="relays-tab">
+       <table id="tablerelays" class="table-heading table table-rounded" style="width:100%;">
+        <thead>
+          <tr>  
+            <th>Id</th>
+            <th>state</th>
+            <th>DateTime</th>
+            <th>name</th>
+          </tr>
+        </thead>
+        {% for our_relay in our_relays %}
+        <tr>
+          <td>{{our_relay.id}}</td>
+          <td>{{our_relay.state}}</td>
+          <td>{{our_relay.date_modified}}</td>
+          <td>{{our_relay.name}}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
   </div>
 </div>
 
 
-</div>
+<script>
+
+  $(document).ready(function() {
+      $('.table').DataTable({
+        paging: false, // Disable pagination
+        searching: false, // Disable searching
+        info: true, // Disable info (the message showing the number of entries)
+        ordering: true, // Enable column ordering
+    });
+  } );
+
+  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+  var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl)
+  })
+
+  </script>
+
 {% endblock %}

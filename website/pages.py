@@ -1,9 +1,9 @@
 from flask import Blueprint,  render_template, request,redirect,url_for,jsonify
-from flask_login import current_user,login_required
+from flask_login import current_user
 from . import sql
 from .function import get_scheduled_events
 from Modules.forms import UserField
-from .function import login_required_custom,is_token_valid,is_current_user_or_admin
+from .function import login_required_custom, login_required_admin
 from dateutil.parser import parse
 from datetime import timedelta
 
@@ -15,13 +15,13 @@ pages = Blueprint("pages", __name__,template_folder='/app/templates', static_fol
 def home_page():
     relays=sql.Relays.get_all()
     return render_template('Switch.html',relays=relays)
-
+ 
 @pages.route('/schedule', methods=['GET'])
 @login_required_custom
 def schedule():
     modified_list= get_scheduled_events()
     events_from_user=sql.Schedules.get_user_schedules(current_user)
-    print(modified_list)
+    
     if events_from_user is None:
         events_from_user=[]
     
@@ -52,9 +52,10 @@ def user():
 def json():
     if request.method == 'POST':  #this block is only entered when the form is submitted
         rely=sql.Relays.get(request.json['id'])
-        if rely.is_wait_time_satisfied():
+        if rely and rely.is_wait_time_satisfied():
             rely.state = request.json['value']
             sql.Relays.modify(rely)
+            sql.LogRelays.new(current_user.email,rely.id,rely.state)
             relays = {"Error":"0","relay":str(request.json['id'])}
         else:
             relays = {"Error":"1","relay":str(request.json['id'])}
@@ -74,30 +75,45 @@ def configuration():
     return render_template('Configuration.html', userEmail=current_user.email)
 
 @pages.route('/database', methods=['POST','GET'])
+@login_required_admin
 def database():
     relays=sql.Relays.get_all()
     roles=sql.Roles.get_all()
     users=sql.Users.get_all()
     return render_template('databse.html',our_roles=roles,our_relays=relays,our_users=users)
 
+@pages.route('/logs', methods=['POST','GET'])
+@login_required_admin
+def logs():
+    userlogs=sql.LogUsers.get_all()
+    relaylogs=sql.LogRelays.get_all()
+    schedulelogs=sql.LogSchedules.get_all()
+    signuprequestlogs=sql.LogSignUpRequest.get_all()
+    return render_template('Logs.html',our_userlogs=userlogs,our_schedulelog=schedulelogs,our_relays=relaylogs,our_signuprequestlogs=signuprequestlogs)
+
+
 @pages.route('/create_event', methods=['POST'])
+@login_required_custom
 def create_event():
     new_event=False
     
-    if is_token_valid and is_current_user_or_admin(request.json['title']):
+    if not(request.json['title'].is_token_expired()) and request.json['title'].is_current_user_or_admin():
         if(sql.Users.get(request.json['title'])):
             new_event=True
             sql.Schedules.new(request.json['title'], parse(request.json['start']) + timedelta(hours=2),parse(request.json['end']) + timedelta(hours=2),request.json['groupId'])
+            sql.LogSchedules.new(current_user.email,request.json['groupId'], 'Create schdule', parse(request.json['start']) + timedelta(hours=2),parse(request.json['end']) + timedelta(hours=2))
     return jsonify({"Created":new_event})
 
 @pages.route('/update_event', methods=['POST'])
+@login_required_custom
 def update_event():
     modified_event=False
     
-    if is_token_valid and is_current_user_or_admin(request.json['title']):
+    if not(request.json['title'].is_token_expired()) and request.json['title'].is_current_user_or_admin():
         if(sql.Users.get(request.json['title'])):
             schedule = sql.Schedules.get(request.json['groupId'])
             schedule.start_time = parse(request.json['start'])
             schedule.end_time = parse(request.json['end'])
             modified_event = sql.Schedules.modify(schedule)
+            sql.LogSchedules.new(current_user.email,schedule.groupId,'Update event',schedule.start_time,schedule.end_time)
     return jsonify({"Updated":modified_event})

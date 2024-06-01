@@ -15,7 +15,11 @@ html,body
 .nav-item{
     font-size: 3.3vh; 
 }
-
+.color-box {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+}
 header
 {
     text-align: center;
@@ -44,12 +48,15 @@ header
 .hidden-xs-up {
     display: none !important;
 }
-  
 
+.table-rounded {
+    border-radius: 15px;
+    overflow: hidden;
+}
 
-
-
-
+.table-heading thead {
+    border-bottom: 2px solid #000;
+  }
 
 
 /* ----------------- LOGIN PAGE -------------------*/
@@ -75,6 +82,11 @@ header
         margin:0;
         padding: 0%;
     }
+    #left-original{
+        width: 100%;
+        padding-right: 10%; 
+        padding-left: 10%; 
+    }
   }
   
   @media (min-width: 992px) {
@@ -90,12 +102,18 @@ header
 
     }
     #left{
-        padding-right: 10%; 
+        padding-right: 2%; 
         padding-left: 2%; 
     }
+    #left-original{
+        width: 100%;
+        padding-right: 10%; 
+        padding-left: 10%; 
+    }
+
     #right{
-        margin:0;
-        padding: 0%;
+        padding-right: 2%; 
+        padding-left: 2%; 
     }
     #left-form p{
         font-size: 1vw;    
