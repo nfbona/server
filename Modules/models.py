@@ -7,7 +7,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker,scoped_session
 from sqlalchemy.pool import QueuePool
 from flask_login import login_user,logout_user
-from sqlalchemy.ext.declarative import declarative_base # allows to make a class that maps to a table
+from sqlalchemy.ext.declarative import declarative_base# allows to make a class that maps to a table
+from sqlalchemy import and_,or_
 import functools
 # initialize the base class ootb ORM
 Base = declarative_base()
@@ -17,7 +18,7 @@ db = SQLAlchemy()
 
 # Between two requests the time to wait to change the relay
 TIMETOWAIT=10
-
+MINUTS_USUARIS=120
 #import to password hashing
 from werkzeug.security import generate_password_hash,check_password_hash
    
@@ -121,6 +122,9 @@ class CustomAnonymousUser(AnonymousUserMixin):
     def is_authenticated_and_admin(self):
         return False
     
+    def user_event_validation(self,user):
+        return False
+    
 # Set up the login manager
 
 
@@ -217,6 +221,8 @@ class Users(UserMixin,BaseModel):
     def is_authenticated_and_admin(self):
         return self.is_admin_role()
     
+    def user_event_validation(self,user):
+        return not(self.is_token_expired()) and self.is_current_user_or_admin(user)
     
     @classmethod
     def login(cls,user):
@@ -239,6 +245,7 @@ class Users(UserMixin,BaseModel):
         user = session.query(cls).filter_by(_email=str(email)).first()
         session.close()
         return user
+
 
 class Roles( BaseModel):
     __tablename__ = 'roles'
@@ -354,16 +361,39 @@ class Schedules(BaseModel):
         return schedules
     
     @classmethod
-    def get_future_user_schedules(cls,user):
+    def get_future_schedules(cls):
         session = cls.db.Session()
-        schedules = session.query(Schedules).filter_by(user_email=user.email).filter(Schedules.start_time>datetime.now()).all()
+        schedules = session.query(Schedules).filter(Schedules.end_time>datetime.now()).all()
         session.close()
         return schedules
     
     @classmethod
-    def get_all_schedules_minus_user(cls,user):
+    def get_past_schedules(cls):
         session = cls.db.Session()
-        schedules = session.query(Schedules).filter(Schedules.user_email != user.email).all()
+        schedules = session.query(Schedules).filter(Schedules.end_time<=datetime.now()).all()
+        session.close()
+        return schedules   
+    
+    @classmethod
+    def get_future_user_schedules(cls,user):
+        session = cls.db.Session()
+        schedules = session.query(Schedules).filter_by(user_email=user.email).filter(Schedules.end_time>datetime.now()).all()
+        session.close()
+        return schedules  
+    
+    @classmethod
+    def get_all_schedules_minus_user_future(cls,user):
+        session = cls.db.Session()
+        schedules = session.query(Schedules).filter(
+            or_(
+                and_(
+                    Schedules.user_email == user.email,
+                    Schedules.end_time <= datetime.now()
+                ),                
+                and_(
+                    Schedules.user_email != user.email
+                )
+            )).all()
         session.close()
         return schedules
 
@@ -373,6 +403,46 @@ class Schedules(BaseModel):
         schedules = session.query(Schedules).filter(Schedules.id == id).first()
         session.close()
         return schedules
+    
+    @classmethod
+    def get_time_user(cls,user):
+        events_from_user=cls.get_future_user_schedules(user)
+        max_minutes=MINUTS_USUARIS
+        
+        if events_from_user is None:
+            events_from_user=[]
+    
+        if user.is_user_role():
+            for event in events_from_user:
+                time=(event.end_time-event.start_time).total_seconds() / 60
+                max_minutes=max_minutes-time
+                
+        elif user.is_admin_role():
+            max_minutes=9999999999
+        
+        return max_minutes
+
+    @classmethod
+    def get_overlap(cls, start_time, end_time):
+        session = cls.db.Session()
+        overlap = session.query(Schedules).filter(
+            or_(
+                and_(
+                    Schedules.start_time >= start_time,
+                    Schedules.start_time < end_time
+                ),                    
+                and_(
+                    Schedules.end_time > start_time,
+                    Schedules.end_time <= end_time
+                ),
+                and_(
+                    Schedules.start_time <= start_time,
+                    Schedules.end_time >= end_time
+                )
+            )           
+        ).all()
+        session.close()
+        return overlap
     
 class SignUpRequest(BaseModel):
     __tablename__ = 'signup_request'
@@ -439,7 +509,7 @@ class LogSchedules(Log):
 
 class LogSignUpRequest(Log):
     __tablename__ = 'log_signup_request'
-    user_accepter = db.Column('user_accepter',db.String(100),  db.ForeignKey('users.email'))
+    user_accepter = db.Column('user_accepter',db.String(100))
     email = db.Column('user_email',db.String(100), nullable=False)
     
     def __init__(self,user_accepter,email,action):

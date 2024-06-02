@@ -52,7 +52,6 @@ CREATE TABLE if not exists log_users (
     action VARCHAR(100), 
     id INT AUTO_INCREMENT,  
     datetime DATETIME, 
-    FOREIGN KEY(user_email) REFERENCES users(email),
     PRIMARY KEY(id)
     );
 
@@ -62,8 +61,6 @@ CREATE TABLE if not exists log_relays (
     id INT AUTO_INCREMENT,  
     relay_id INT ,  
     datetime DATETIME,  
-    FOREIGN KEY(user_email) REFERENCES users(email),
-    FOREIGN KEY(relay_id) REFERENCES relays(id),
     PRIMARY KEY(id)
     );
 
@@ -76,8 +73,6 @@ CREATE TABLE if not exists log_schedules (
     schedule_id VARCHAR(256) NOT NULL, 
     start_time DATETIME, 
     end_time DATETIME, 
-    FOREIGN KEY(schedule_id) REFERENCES schedule(id),
-    FOREIGN KEY(user_email) REFERENCES users(email),
     PRIMARY KEY(id)
     );
 
@@ -87,7 +82,6 @@ CREATE TABLE if not exists log_signup_request (
     action VARCHAR(100), 
     id INT AUTO_INCREMENT,  
     datetime DATETIME, 
-    FOREIGN KEY(user_accepter) REFERENCES users(email),
     PRIMARY KEY(id)
     );
 

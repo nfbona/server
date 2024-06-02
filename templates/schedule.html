@@ -3,7 +3,7 @@
 {% block title %}  {% endblock %}
 {% block content %} 
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
-{% from "aux/macros.html" import modal %}
+{% from "aux/macros.html" import modal, toast, toastjs, permanentToast %}
 
 <!--
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css">
@@ -16,8 +16,16 @@
   }
 </style>
 
-<body>
   <script>
+
+      function revert(info) {
+          info.revert();
+      }
+
+      function unselect(info) {
+          info.calendar.unselect();
+      }
+
       function newEvent(selectionInfo) {
           return {
               title: '{{current_user.email}}',
@@ -29,70 +37,109 @@
           };
       }
 
-      function newEventBackend(selectionInfo) {
-          event = newEvent(selectionInfo);
-          var result = ajaxPostRequest("{{url_for('pages.create_event')}}", event);
-          if (result['Created']) {
-              return event;
-          } else {
-              return null;
-          }
-      }
+      async function activate_modal(id, title, body,selectionInfo, action,cancel,calendar) {
+        $("#"+id+'-title').html(title);
+        $("#"+id+'-body').html(body);
+        $('#'+id).modal('show');
+        var actionResult;
+        $("#"+id+'-button-action').off('click').on('click', async function() {
+            actionResult = await action(selectionInfo,calendar);
+            $('#'+id).modal('hide');
+        });
+        $("#"+id+'-button-cancel').off('click').on('click', async function() {
+            await cancel(selectionInfo);
+            $('#'+id).modal('hide');
+        });
+    };
 
-      function modifyEventBackend(info) {
-          eventModified = info.event;
-          var result = ajaxPostRequest("{{url_for('pages.update_event')}}", eventModified);
-          if (result['Updated']) {
-              return eventModified;
-          } else {
-              return null;
-          }
-      }
+        async function newEventBackend(selectionInfo,calendar) {
+            event = newEvent(selectionInfo);
+            var result = ajaxPostRequest("{{url_for('pages.create_event')}}", event);
+            if (result['Created']) {
+                calendar.addEvent(event);
+                {{ toastjs('okToast', 'Event creat satisfactoriament.') }}
+                
+                return event;
+            } else {
+                calendar.unselect();
+                {{ toastjs('warningToast', 'Sisplau, comprova que els temps son posteriors a ara mateix.') }}
+                console.error("Error creating event");
+            }
+        }
+        
+        async function modifyEventBackend(info,calendar) {
+            eventModified = info.event;
+            var result = ajaxPostRequest("{{url_for('pages.update_event')}}", eventModified);
+            if (result['Updated']) {
+                {{ toastjs('okToast', 'Event modificat satisfactoriament.') }}
+                
+                return eventModified;
+            } else {
+                info.revert();
+                {{ toastjs('warningToast', 'Sisplau, comprova que els temps son posteriors a ara mateix o son teus.') }}
+                console.error("Error modifying event");
+            }
+        }
 
-      function ajaxGetRequest(url, object) {
-          var responseContent;
-          $.ajax({
-              url: url,
-              type: 'GET',
-              async: false,
-              success: function (response) {
-                  responseContent = response;
-              },
-              error: function (errorThrown) {
-                  console.error(errorThrown);
-                  responseContent = errorThrown;
-              }
-          });
-          console.log(responseContent);
-          return responseContent;
-      }
+        async function deleteEventBackend(info,calendar) {
+            eventDeleted = info.event;
+            var result = ajaxPostRequest("{{url_for('pages.delete_event')}}", eventDeleted);
+            if (result['Deleted']) {
+                info.event.remove();
+                {{ toastjs('okToast', 'Event esborrat satisfactoriament.') }}
+                return eventDeleted;
+            } else {
+                {{ toastjs('warningToast', 'Sisplau, comprova que els temps son posteriors a ara mateix o son teus.') }}
+                console.error("Error deleting event");
+            }
+        }
+        
+        function ajaxGetRequest(url, object) {
+            var responseContent;
+            $.ajax({
+                url: url,
+                type: 'GET',
+                async: false,
+                success: function (response) {
+                    responseContent = response;
+                },
+                error: function (errorThrown) {
+                    console.error(errorThrown);
+                    responseContent = errorThrown;
+                }
+            });
+            console.log(responseContent);
+            return responseContent;
+        }
 
-      function ajaxPostRequest(url, object) {
-          var responseContent;
-          $.ajax({
-              url: url,
-              contentType: 'application/json',
-              type: 'POST',
-              data: JSON.stringify(object),
-              async: false,
-              success: function (response) {
-                  responseContent = response;
-              },
-              error: function (errorThrown) {
-                  console.error(errorThrown);
-                  responseContent = null;
-              }
-          });
-          console.log(responseContent);
-          return responseContent;
-      }
+        function ajaxPostRequest(url, object) {
+            var responseContent;
+            $.ajax({
+                url: url,
+                contentType: 'application/json',
+                type: 'POST',
+                data: JSON.stringify(object),
+                async: false,
+                success: function (response) {
+                    responseContent = response;
+                },
+                error: function (errorThrown) {
+                    console.error(errorThrown);
+                    responseContent = null;
+                }
+            });
+            console.log(responseContent);
+            return responseContent;
+        }
 
       document.addEventListener('DOMContentLoaded', function () {
           var calendarEl = document.getElementById('calendar');
 
           var calendar = new FullCalendar.Calendar(calendarEl, {
-              aspectRatio: 1,
+              aspectRatio: 0.5,
+              slotDuration: '00:05:00', 
               locale: 'ca',
+              timeZone: 'Europe/Paris',
               weekends: true,
               firstDay: 1,
               allDaySlot: false,
@@ -123,25 +170,16 @@
                       }{% if not loop.last %},{% endif %}
                   {% endfor %}
               ],
-              eventChange: function (info) {
-                  if (confirm("Estàs segur que vols modificar aquesta reserva?\n Inici: " + info.event.startStr + ' Final: ' + info.event.endStr)) {
-                      var event = modifyEventBackend(info);
-                      console.log(event);
-                  } else {
-                      info.revert();
-                  }
+              eventChange: async function (info) {
+                oldEventinfo = info.oldEvent;
+                newEventinfo = info.event;
+                activate_modal('accept_modification', 'Modificar reserva','La següent acció modificarà la reserva.<br> Reserva original: <ul><li><strong>Inici de reserva: </strong>'+oldEventinfo.start.toISOString().toLocaleString('es-ES', { timeZone: 'Europe/Paris' })+'</li><li><strong>Final de reserva: </strong>'+oldEventinfo.end.toISOString().toLocaleString('es-ES', { timeZone: 'Europe/Paris' })+'</li></ul> <br> Modificant a:<ul><li><strong>Inici de reserva: </strong>'+newEventinfo.start.toISOString().toLocaleString('es-ES', { timeZone: 'Europe/Paris' })+'</li><li><strong>Final de reserva: </strong>'+newEventinfo.end.toISOString().toLocaleString('es-ES', { timeZone: 'Europe/Paris' })+'</li></ul>',info, modifyEventBackend, revert,calendar);
               },
-              eventClick: function (info) {
-                  alert('GROUPID' + info.event.groupId + ' TItle: ' + info.event.title + ', Start: ' + info.event.start + ', End: ' + info.event.end);
-              },
-              select: function (selectionInfo) {
-                  if (confirm("Estàs segur que vols fer un booking d'aquestes hores?\n Inici: " + selectionInfo.startStr + ' Final: ' + selectionInfo.endStr)) {
-                      var event = newEventBackend(selectionInfo);
-                      console.log(event);
-                      calendar.addEvent(event);
-                  } else {
-                      calendar.unselect();
-                  }
+              eventClick: async function (info) {
+                activate_modal('delete', 'Esborrar reserva','La següent acció esborrarà la reserva.<br> Reserva: <ul><li><strong>Inici de reserva: </strong>'+info.event.start.toISOString().toLocaleString('es-ES', { timeZone: 'Europe/Paris' })+'</li><li><strong>Final de reserva: </strong>'+info.event.end.toISOString().toLocaleString('es-ES', { timeZone: 'Europe/Paris' })+'</li></ul>',info, deleteEventBackend, revert,calendar);
+                },
+              select: async function (info) {
+                activate_modal('accept_creation', 'Crear reserva','La següent acció crearà la següent nova reserva.<br> Reserva: <ul><li><strong>Inici de reserva: </strong>'+info.start.toISOString().toLocaleString('es-ES', { timeZone: 'Europe/Paris' })+'</li><li><strong>Final de reserva: </strong>'+info.end.toISOString().toLocaleString('es-ES', { timeZone: 'Europe/Paris' })+'</li></ul>',info, newEventBackend, unselect,calendar);
               },
               initialView: 'timeGridWeek'
           });
@@ -152,30 +190,26 @@
   <div class="container-fluid">
       <h1 class="text-center">Schedule</h1>
       <div class="row text-center">
-          <div class="col-9">
+            <div class="col">
               <div id="calendar"></div>
-          </div>
-          <div class="col-3">
-              <div id="userConfig" class="mb-4 p-3" style="height: 350px; overflow: auto;">
-                  <h2 class="text-center">User information {{current_user.email}}</h2>
-                  <div id="llistaEvents">
-                      <div>
-                          <span>User email: {{current_user.email}}</span>
-                      </div>
-                      <div>
-                          <span>Hours restants: {{hours}}</span>
-                      </div>
-                      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#delete">
-                          Launch demo modal
-                      </button>
-                  </div>
-              </div>
-          </div>
+            </div>
       </div>
   </div>
 
-  {{ modal('delete', 'Modal Title 1', 'Modal Body 1',  'Delete','Cancel') }}
+    {{ modal('accept_creation', 'Accept','Cancel','btn-success') }}
+    {{ modal('accept_modification', 'Accept','Cancel','btn-success') }}
+    {{ modal('delete', 'Delete','Cancel','btn-danger') }}
+    {{ toast() }}
+    {{ permanentToast(current_user,hours,userEventCount) }}
 
-</body>
-</html>
+    <script>
+        
+        window.onload = function(toast) {
+            var toastEl = document.getElementById('permanentToast');
+            var toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+
+    </script>
+
 {% endblock %}

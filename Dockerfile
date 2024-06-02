@@ -1,13 +1,13 @@
-FROM resin/rpi-raspbian:latest
-FROM python:3.9-slim-buster
+FROM resin/rpi-raspbian:latest 
+FROM python:3.9-slim-buster as base
 
 # copy all necessary files into workdirectory
 COPY ./static /app/static
 COPY ./Modules /app/Modules
 COPY ./templates /app/templates
 COPY ./website /app/website
-COPY ./.env /app/.env
 COPY ./app.py /app/app.py
+COPY ./.env /app/.env
 COPY ./wsgi.py /app/wsgi.py
 COPY ./requirements.txt /app/requirements.txt
 
@@ -18,6 +18,16 @@ RUN pip3 install Flask
 RUN pip install -r requirements.txt
 
 ENV FLASK_APP=app.py
+
+#DEUBUG
+FROM base as dev
+
+RUN pip install debugpy
+
+CMD python -m debugpy --listen 0.0.0.0:5678 --wait-for-client -m gunicorn --bind 0.0.0.0:80 wsgi:app --workers 1 --threads 5 --worker-class=sync
+
+# PRODUCTION
+FROM base as production
 
 CMD ["sh","-c","sleep 0 && gunicorn --bind 0.0.0.0:80 wsgi:app --workers 1 --threads 5 --worker-class=sync"]
 

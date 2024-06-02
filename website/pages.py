@@ -1,9 +1,9 @@
-from flask import Blueprint,  render_template, request,redirect,url_for,jsonify
+from flask import Blueprint,  render_template, request,jsonify
 from flask_login import current_user
 from . import sql
-from .function import get_scheduled_events
+from .function import get_scheduled_events,create_event_schedule,update_event_schedule,delete_event_schedule
 from Modules.forms import UserField
-from .function import login_required_custom, login_required_admin
+from .function import login_required_custom, login_required_admin,time_is_valid,conditions_to_update_or_create_event
 from dateutil.parser import parse
 from datetime import timedelta
 
@@ -16,25 +16,6 @@ def home_page():
     relays=sql.Relays.get_all()
     return render_template('Switch.html',relays=relays)
  
-@pages.route('/schedule', methods=['GET'])
-@login_required_custom
-def schedule():
-    modified_list= get_scheduled_events()
-    events_from_user=sql.Schedules.get_user_schedules(current_user)
-    
-    if events_from_user is None:
-        events_from_user=[]
-    
-    if current_user.is_user_role():
-        max_hours=29
-        for event in events_from_user:
-            time=(event.end_time-event.start_time).total_seconds() / 60
-            max_hours=max_hours-time
-            
-    elif current_user.is_admin_role():
-        max_hours=999
-        
-    return render_template('schedule.html',all_events=modified_list,current_user=current_user,hours=max_hours)
 
 @pages.route('/user', methods=['POST','GET'])
 @login_required_custom
@@ -91,17 +72,23 @@ def logs():
     signuprequestlogs=sql.LogSignUpRequest.get_all()
     return render_template('Logs.html',our_userlogs=userlogs,our_schedulelog=schedulelogs,our_relays=relaylogs,our_signuprequestlogs=signuprequestlogs)
 
+@pages.route('/schedule', methods=['GET'])
+@login_required_custom
+def schedule():
+    modified_list= get_scheduled_events()
+    hours=sql.Schedules.get_time_user(current_user)
+    userEventCount=len(sql.Schedules.get_future_user_schedules(current_user))
+    
+    return render_template('schedule.html',all_events=modified_list,current_user=current_user,hours=hours,userEventCount=userEventCount)
 
 @pages.route('/create_event', methods=['POST'])
 @login_required_custom
 def create_event():
     new_event=False
     
-    if not(request.json['title'].is_token_expired()) and request.json['title'].is_current_user_or_admin():
-        if(sql.Users.get(request.json['title'])):
-            new_event=True
-            sql.Schedules.new(request.json['title'], parse(request.json['start']) + timedelta(hours=2),parse(request.json['end']) + timedelta(hours=2),request.json['groupId'])
-            sql.LogSchedules.new(current_user.email,request.json['groupId'], 'Create schdule', parse(request.json['start']) + timedelta(hours=2),parse(request.json['end']) + timedelta(hours=2))
+    if conditions_to_update_or_create_event(request):
+        new_event=create_event_schedule(request)
+            
     return jsonify({"Created":new_event})
 
 @pages.route('/update_event', methods=['POST'])
@@ -109,11 +96,17 @@ def create_event():
 def update_event():
     modified_event=False
     
-    if not(request.json['title'].is_token_expired()) and request.json['title'].is_current_user_or_admin():
-        if(sql.Users.get(request.json['title'])):
-            schedule = sql.Schedules.get(request.json['groupId'])
-            schedule.start_time = parse(request.json['start'])
-            schedule.end_time = parse(request.json['end'])
-            modified_event = sql.Schedules.modify(schedule)
-            sql.LogSchedules.new(current_user.email,schedule.groupId,'Update event',schedule.start_time,schedule.end_time)
+    if conditions_to_update_or_create_event(request):
+        modified_event=update_event_schedule(request)
+    
     return jsonify({"Updated":modified_event})
+
+@pages.route('/delete_event', methods=['POST'])
+@login_required_custom
+def delete_event():
+    delete_event=False
+    
+    if current_user.user_event_validation(request.json['title']) and time_is_valid(parse(request.json['start']),parse(request.json['end'])):
+        delete_event=delete_event_schedule(request)
+    
+    return jsonify({"Deleted":delete_event})
