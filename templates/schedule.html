@@ -18,6 +18,9 @@
 
   <script>
 
+    var reserves={{userEventCount}};
+    var minuts={{hours}};
+
       function revert(info) {
           info.revert();
       }
@@ -25,6 +28,26 @@
       function unselect(info) {
           info.calendar.unselect();
       }
+
+      function update_user_info(minuts,reserves) {
+          document.getElementById('User-timeleft').innerHTML = minuts;
+          document.getElementById('User-reserves').innerHTML = reserves;
+      }
+
+    function calculateTimeInMinutes(startTime, endTime) {
+        var start = new Date(startTime);
+        var end = new Date(endTime);
+        var diff = end.getTime() - start.getTime();
+        var minutes = Math.floor(diff / 1000 / 60);
+        return minutes;
+    }
+
+
+    async function updateminutesEvents(minutes,reserva){
+        reserves+=reserva;
+        minuts-=minutes;
+        update_user_info(minuts,reserves);
+    }
 
       function newEvent(selectionInfo) {
           return {
@@ -43,11 +66,11 @@
         $('#'+id).modal('show');
         var actionResult;
         $("#"+id+'-button-action').off('click').on('click', async function() {
-            actionResult = await action(selectionInfo,calendar);
+            action(selectionInfo,calendar);
             $('#'+id).modal('hide');
         });
         $("#"+id+'-button-cancel').off('click').on('click', async function() {
-            await cancel(selectionInfo);
+            cancel(selectionInfo);
             $('#'+id).modal('hide');
         });
     };
@@ -58,7 +81,7 @@
             if (result['Created']) {
                 calendar.addEvent(event);
                 {{ toastjs('okToast', 'Event creat satisfactoriament.') }}
-                
+                updateminutesEvents(calculateTimeInMinutes(event.start, event.end),1);
                 return event;
             } else {
                 calendar.unselect();
@@ -72,7 +95,7 @@
             var result = ajaxPostRequest("{{url_for('pages.update_event')}}", eventModified);
             if (result['Updated']) {
                 {{ toastjs('okToast', 'Event modificat satisfactoriament.') }}
-                
+                updateminutesEvents(calculateTimeInMinutes(info.event.start, info.event.end)-calculateTimeInMinutes(info.oldEvent.start, info.oldEvent.end),0);
                 return eventModified;
             } else {
                 info.revert();
@@ -87,6 +110,7 @@
             if (result['Deleted']) {
                 info.event.remove();
                 {{ toastjs('okToast', 'Event esborrat satisfactoriament.') }}
+                updateminutesEvents(-calculateTimeInMinutes(eventDeleted.start, eventDeleted.end),-1);
                 return eventDeleted;
             } else {
                 {{ toastjs('warningToast', 'Sisplau, comprova que els temps son posteriors a ara mateix o son teus.') }}
@@ -136,8 +160,8 @@
           var calendarEl = document.getElementById('calendar');
 
           var calendar = new FullCalendar.Calendar(calendarEl, {
-              aspectRatio: 0.5,
-              slotDuration: '00:05:00', 
+              height: 'auto',
+              slotDuration: '00:15:00', 
               locale: 'ca',
               timeZone: 'Europe/Paris',
               weekends: true,
@@ -181,10 +205,17 @@
               select: async function (info) {
                 activate_modal('accept_creation', 'Crear reserva','La següent acció crearà la següent nova reserva.<br> Reserva: <ul><li><strong>Inici de reserva: </strong>'+info.start.toISOString().toLocaleString('es-ES', { timeZone: 'Europe/Paris' })+'</li><li><strong>Final de reserva: </strong>'+info.end.toISOString().toLocaleString('es-ES', { timeZone: 'Europe/Paris' })+'</li></ul>',info, newEventBackend, unselect,calendar);
               },
-              initialView: 'timeGridWeek'
-          });
-          calendar.render();
-      });
+              initialView: 'timeGridWeek',
+              windowResize: function(view) {
+                if (window.innerWidth < 768){
+                    calendar.changeView('timeGridDay');
+                } else if(window.innerWidth < 1200){
+                    calendar.changeView('timeGridWeek');
+                } 
+            }
+        });
+        calendar.render();
+    });
   </script>
 
   <div class="container-fluid">

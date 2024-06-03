@@ -31,17 +31,14 @@ def user():
 @pages.route('/json', methods=['POST'])
 @login_required_custom
 def json():
-    if request.method == 'POST':  #this block is only entered when the form is submitted
-        rely=sql.Relays.get(request.json['id'])
-        if rely and rely.is_wait_time_satisfied():
-            rely.state = request.json['value']
-            sql.Relays.modify(rely)
-            sql.LogRelays.new(current_user.email,rely.id,rely.state)
-            relays = {"Error":"0","relay":str(request.json['id'])}
-        else:
-            relays = {"Error":"1","relay":str(request.json['id'])}
-    if request.method == 'GET':
-        relays=sql.Relays.get_all()
+    rely=sql.Relays.get(request.json['id'])
+    if rely and rely.is_wait_time_satisfied():
+        rely.state = request.json['value']
+        sql.Relays.modify(rely)
+        sql.LogRelays.new(current_user.email,rely.id,rely.state)
+        relays = {"Error":"0","relay":str(request.json['id'])}
+    else:
+        relays = {"Error":"1","relay":str(request.json['id'])}
 
     return relays
 

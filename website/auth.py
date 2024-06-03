@@ -129,3 +129,18 @@ def signuprequestdeny(email):
         flash('Invalid email.')
         
     return redirect(url_for('auth.signup'))
+
+@login_required_admin
+@auth.route('/deleteUsers', methods=['POST'])
+def deleteUsers():
+    userList=request.json['emails']
+    response={"users_deleted":[], "users_not_existing":[]}
+    for email in userList:
+        user=sql.Users.get(email)
+        if user:
+            sql.LogUsers.new(current_user.email,'Delete user')
+            sql.Users.delete(user)
+            response.get('users_deleted').append(email)
+        else:
+            response.get('users_not_existing').append(email)
+    return response

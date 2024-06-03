@@ -2,9 +2,11 @@
 {% extends "base/baseNavbar.html" %}
 {% block title %}  {% endblock %}
 {% block content %} 
+{% from "aux/macros.html" import modal %}
 
 
 <div id="container" class="container-fluid" >
+
   <ul class="nav nav-tabs" id="myTab" role="tablist">
     <li class="nav-item" role="presentation">
       <a class="nav-link active" id="users-tab" data-bs-toggle="tab" href="#users" role="tab" aria-controls="users" aria-selected="true">Users</a>
@@ -21,6 +23,7 @@
         <table id="tableusers" class="table-heading table table-rounded" style="width:100%;">
         <thead>
           <tr> 
+            <th>  </th>
             <th>Email</th>
             <th>Role id</th>
             <th>Last login</th>
@@ -28,15 +31,21 @@
           </tr>
         </thead>
         {% for our_user in our_users %}
-        <tr>
-        <td>{{our_user.email}}</td>
-        <td>{{our_user.role_id}}</td>
-        <td>{{our_user.last_login}}</td>
-        <td><div class="color-box" style="background-color: rgb({{our_user.color}});"></div>
-        </td>
-        </tr>
+        <tr id="{{our_user.email}}">
+          <td><input type="checkbox" class="delete-checkbox" value="{{our_user.email}}"></td>
+          <td class="email">{{our_user.email}}</td>
+          <td class="role_id">{{our_user.role_id}}</td>
+          <td class="last_login">{{our_user.last_login}}</td>
+          <td class="color" style="justify-content: center;align-items: center;text-align:center;"><div class="color-box" style="background-color: rgb({{our_user.color}});"></div></td>
+          <td class="info" style="justify-content: center;align-items: center;text-align:center;"><button  style="background-color: rgb({{our_user.color}});"></td>
+            <td><button onclick="deleteUser('{{our_user.email}}')">Delete</button></td>
+          </tr>
         {% endfor %}
       </table>
+      <button id="editButton">Edit</button>
+      <button id="saveButton" style="display: none;">Save</button>
+      <button id="discardButton" style="display: none;">Discard</button>
+      <button id="deleteButton">Delete</button>
     </div>
     <div class="tab-pane fade" id="roles" role="tabpanel" aria-labelledby="roles-tab">
       <table id="tableroles" class="table-heading table table-rounded" style="width:100%;">
@@ -76,17 +85,18 @@
     </div>
   </div>
 </div>
-
+{{modal('modal1','Delete','Cancel','btn-danger')}}
 
 <script>
-
+// TABLE
   $(document).ready(function() {
       $('.table').DataTable({
         paging: false, // Disable pagination
-        searching: false, // Disable searching
+        searching: true, // Disable searching
         info: true, // Disable info (the message showing the number of entries)
         ordering: true, // Enable column ordering
-    });
+
+  });
   } );
 
   var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
@@ -94,6 +104,101 @@
     return new bootstrap.Tooltip(tooltipTriggerEl)
   })
 
+document.getElementById('editButton').addEventListener('click', function() {
+  // Make the table editable
+  var cells = document.querySelectorAll('#tableusers td');
+  cells.forEach(function(cell) {
+      cell.setAttribute('contenteditable', 'true');
+  });
+
+  // Show the save and discard buttons
+  document.getElementById('saveButton').style.display = 'inline';
+  document.getElementById('discardButton').style.display = 'inline';
+});
+
+document.getElementById('saveButton').addEventListener('click', function() {
+  // Collect the data from the table
+  var data = [];
+  var rows = document.querySelectorAll('#tableusers tr');
+  rows.forEach(function(row) {
+      var rowData = {};
+      var cells = row.querySelectorAll('td');
+      cells.forEach(function(cell) {
+          rowData[cell.id] = cell.innerText;
+      });
+      data.push(rowData);
+  });
+
+  // Send the data to the backend
+  fetch('/your-backend-url', {
+      method: 'POST',
+      headers: {
+          'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+  });
+
+  // Make the table non-editable
+  var cells = document.querySelectorAll('#tableusers td');
+  cells.forEach(function(cell) {
+      cell.setAttribute('contenteditable', 'false');
+  });
+
+  // Hide the save and discard buttons
+  document.getElementById('saveButton').style.display = 'none';
+  document.getElementById('discardButton').style.display = 'none';
+});
+
+document.getElementById('discardButton').addEventListener('click', function() {
+  location.reload();
+});
+
+document.getElementById('deleteButton').addEventListener('click', function() {
+  // Collect the emails of all selected users
+  var selectedUsers = [];
+  var checkboxes = document.querySelectorAll('.delete-checkbox:checked');
+  checkboxes.forEach(function(checkbox) {
+      selectedUsers.push(checkbox.value);
+  });
+   activate_modal(modal1,'Borrar ususaris del sistema','Estas segur que vols borrar els usuaris seleccionats?<br><strong>Selected users:</strong><br>'+selectedUsers.join('<br>'),selectedUsers,deleteUserList,()=>{console.log('Cancel')});
+});
+
+async function activate_modal(id, title, body,selectionInfo, action,cancel) {
+  $("#"+id+'-title').html(title);
+  $("#"+id+'-body').html(body);
+  $('#'+id).modal('show');
+  var actionResult;
+  $("#"+id+'-button-action').off('click').on('click', async function() {
+      actionResult = action(selectionInfo);
+      $('#'+id).modal('hide');
+  });
+  $("#"+id+'-button-cancel').off('click').on('click', async function() {
+      await cancel(selectionInfo);
+      $('#'+id).modal('hide');
+  });
+};
+
+// Delete the selected users
+
+async function deleteUserList(emails) {
+  // This is just a placeholder, you will need to implement the actual deletion logic
+  console.log('Delete users with emails: ' + emails.join(', '));
+
+  // Example of sending a single request with the list of emails
+  // Uncomment and modify the following lines to match your backend API
+
+   const response = await fetch("{{url_for('auth.deleteUsers')}}", {
+     method: 'POST',
+     headers: {
+       'Content-Type': 'application/json',
+     },
+     body: JSON.stringify({ emails: emails }),
+   });
+
+   if (!response.ok) {
+     console.error('Failed to delete users');
+   }
+}
   </script>
 
 {% endblock %}
