@@ -141,6 +141,7 @@ class Users(UserMixin,BaseModel):
     
     
     def __init__(self,email,password):
+        self.is_active=True
         self.email=email
         self.password_hash=password
         self.date_modified=datetime.now()
@@ -198,7 +199,9 @@ class Users(UserMixin,BaseModel):
         
     # mandatory method for flask login
     def get_id(self):
-        return self.email
+        if self.is_active:
+            return self.email
+        return ""
 
     def checkPass(self,password):
         return check_password_hash(self.password_hash,password)
@@ -225,6 +228,12 @@ class Users(UserMixin,BaseModel):
         return not(self.is_token_expired()) and self.is_current_user_or_admin(user)
     
     @classmethod
+    def change_role(cls,user,role_id):
+        user.role_id=role_id      
+        cls.modify(user)
+        return user.role_id==role_id
+    
+    @classmethod
     def login(cls,user):
         user.is_session_active = True
         user.update_last_login()
@@ -242,10 +251,16 @@ class Users(UserMixin,BaseModel):
     @classmethod
     def get(cls,email):
         session = cls.db.Session()
-        user = session.query(cls).filter_by(_email=str(email)).first()
+        user = session.query(cls).filter_by(_is_active=True).filter_by(_email=str(email)).first()
         session.close()
         return user
 
+    @classmethod
+    def get_all(cls):
+        session = cls.db.Session()
+        users = session.query(cls).filter_by(_is_active=True).all()
+        session.close()
+        return users
 
 class Roles( BaseModel):
     __tablename__ = 'roles'
@@ -273,6 +288,13 @@ class Roles( BaseModel):
     def name(self, name):
         self._name = name
         
+    @classmethod
+    def get(cls,role_id):
+        session = cls.db.Session()
+        role = session.query(cls).filter_by(_id=role_id).first()
+        session.close()
+        return role    
+    
 class Relays(BaseModel):
     __tablename__ = 'relays'
     _id = db.Column('id', db.Integer, primary_key=True, nullable=False)
@@ -380,6 +402,16 @@ class Schedules(BaseModel):
         schedules = session.query(Schedules).filter_by(user_email=user.email).filter(Schedules.end_time>datetime.now()).all()
         session.close()
         return schedules  
+    
+    @classmethod
+    def delete_all_user_future_schedules(cls,user):
+        session = cls.db.Session()
+        schedules = cls.get_future_user_schedules(user)
+        for schedule in schedules:
+            cls.delete(schedule)
+        session.close()
+        return True
+    
     
     @classmethod
     def get_all_schedules_minus_user_future(cls,user):

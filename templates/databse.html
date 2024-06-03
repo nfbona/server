@@ -37,22 +37,19 @@
           <td><input type="checkbox" class="delete-checkbox" value="{{our_user.email}}"></td>
           <td class="email">{{our_user.email}}</td>
           <td class="role_id">
-          <select class="role_id form-select" >
+          <select class="role_id form-select" id="classSelect" onchange="classSelected('{{our_user.email}}')" >
             <option value="1" {% if our_user.role_id == 1 %}selected{% endif %}>Admin</option>
             <option value="2" {% if our_user.role_id == 2 %}selected{% endif %}>Usuari</option>
           </select>
         </td>
           <td class="last_login">{{our_user.last_login}}</td>
           <td class="color" style="justify-content: center;align-items: center;text-align:center;"><div class="color-box" style="background-color: rgb({{our_user.color}});"></div></td>
-          <td class="info" style="justify-content: center;align-items: center;text-align:center;"><button  style="background-color: rgb({{our_user.color}});"></td>
-            <td><button onclick="deleteUserList('['+'{{our_user.email}}'+']')">Delete</button></td>
+          <td class="info" style="justify-content: center;align-items: center;text-align:center;"><button class="color-box" style="background-color: rgb({{our_user.color}});"> i</button></td>
+            <td><button class="btn btn-danger" onclick="deleteUser('{{our_user.email}}')">Delete</button></td>
           </tr>
         {% endfor %}
       </table>
-      <button id="editButton">Edit</button>
-      <button id="saveButton" style="display: none;">Save</button>
-      <button id="discardButton" style="display: none;">Discard</button>
-      <button id="deleteButton">Delete</button>
+        <button id="deleteButton"class="btn btn-danger">Delete users selected</button>
     </div>
     <div class="tab-pane fade" id="roles" role="tabpanel" aria-labelledby="roles-tab">
       <table id="tableroles" class="table-heading table table-rounded" style="width:100%;">
@@ -111,55 +108,7 @@
     return new bootstrap.Tooltip(tooltipTriggerEl)
   })
 
-document.getElementById('editButton').addEventListener('click', function() {
-  // Make the table editable
-  var cells = document.querySelectorAll('#tableusers td');
-  cells = document.querySelectorAll('.role_id');
-  cells.forEach(function(cell) {
-      cell.setAttribute('contenteditable', 'true');
-  });
 
-  // Show the save and discard buttons
-  document.getElementById('saveButton').style.display = 'inline';
-  document.getElementById('discardButton').style.display = 'inline';
-});
-
-document.getElementById('saveButton').addEventListener('click', function() {
-  // Collect the data from the table
-  var data = [];
-  var rows = document.querySelectorAll('#tableusers tr');
-  rows.forEach(function(row) {
-      var rowData = {};
-      var cells = row.querySelectorAll('td');
-      cells.forEach(function(cell) {
-          rowData[cell.id] = cell.innerText;
-      });
-      data.push(rowData);
-  });
-
-  // Send the data to the backend
-  fetch('/your-backend-url', {
-      method: 'POST',
-      headers: {
-          'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-  });
-
-  // Make the table non-editable
-  var cells = document.querySelectorAll('#tableusers td');
-  cells.forEach(function(cell) {
-      cell.setAttribute('contenteditable', 'false');
-  });
-
-  // Hide the save and discard buttons
-  document.getElementById('saveButton').style.display = 'none';
-  document.getElementById('discardButton').style.display = 'none';
-});
-
-document.getElementById('discardButton').addEventListener('click', function() {
-  location.reload();
-});
 
 document.getElementById('deleteButton').addEventListener('click', function() {
   // Collect the emails of all selected users
@@ -170,6 +119,7 @@ document.getElementById('deleteButton').addEventListener('click', function() {
   });
    activate_modal('modal1','Borrar ususaris del sistema','Estas segur que vols borrar els usuaris seleccionats?<br><strong>Selected users:</strong><br>'+selectedUsers.join('<br>'),selectedUsers,deleteUserList,()=>{console.log('Cancel')});
 });
+
 
 async function activate_modal(id, title, body,selectionInfo, action,cancel) {
   $("#"+id+'-title').html(title);
@@ -186,12 +136,27 @@ async function activate_modal(id, title, body,selectionInfo, action,cancel) {
   });
 };
 
+function classSelected(id) {
+  var selectElement = document.getElementById('id').getElementsByClassName('role_id')[0].getElementsByTagName('select');
+  var selectedOption = selectElement.options[selectElement.selectedIndex].value;
+  console.log(selectedOption);
+  fetch("{{url_for('auth.roleUser')}}", {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email: id , role: selectedOption }),
+  })
+  .then(response => response.json())
+  .then(data => console.log(data))
+  .catch((error) => {
+    console.error('Error:', error);
+  });
+}
 // Delete the selected users
 
 async function deleteUserList(emails) {
   // This is just a placeholder, you will need to implement the actual deletion logic
-  console.log('Delete users with emails: ' + emails.join(', '));
-
   // Example of sending a single request with the list of emails
   // Uncomment and modify the following lines to match your backend API
 
@@ -210,6 +175,12 @@ async function deleteUserList(emails) {
      console.log('Users deleted successfully');
      location.reload();
    }
+}
+
+
+async function deleteUser(email) {
+  var selectedUsers = [email];
+  activate_modal('modal1','Borrar ususari del sistema',"Estas segur que vols borrar l'usuari seleccionat?<br><strong>Selected user:</strong><br>"+selectedUsers[0],selectedUsers,deleteUserList,()=>{console.log('Cancel')});
 }
   </script>
 

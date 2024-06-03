@@ -136,11 +136,34 @@ def deleteUsers():
     userList=request.json['emails']
     response={"users_deleted":[], "users_not_existing":[]}
     for email in userList:
-        user=sql.Users.get(email)
-        if user:
-            sql.LogUsers.new(current_user.email,'Delete user')
-            sql.Users.delete(user)
-            response.get('users_deleted').append(email)
+        if(validator.is_email(email)):
+            user=sql.Users.get(email)
+            if user:
+                sql.LogUsers.new(current_user.email,'Deactivate user')
+                sql.Schedules.delete_all_user_future_schedules(user)
+                user.is_active=False
+                sql.Users.modify(user)
+                response.get('users_deleted').append(email)
+            else:
+                response.get('users_not_existing').append(email)
         else:
             response.get('users_not_existing').append(email)
+    return response
+
+@login_required_admin
+@auth.route('/roleUser', methods=['POST'])
+def roleUser():
+    user=request.json['email']
+    response={"State":""}
+    if(validator.is_email(user)):
+        user=sql.Users.get(user)
+        if user:
+            print(request.json['role'])
+            sql.Users.change_role(user,request.json['role'])
+            sql.LogUsers.new( user.email,current_user.email+' changing role to '+request.json['role'])
+            response['State']="OK"
+        else:
+            response['State']="Error"
+    else:
+        response['State']="Error"
     return response
