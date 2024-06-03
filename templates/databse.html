@@ -28,17 +28,24 @@
             <th>Role id</th>
             <th>Last login</th>
             <th>Color</th>
+            <th>Info</th>
+            <th>Delete</th>
           </tr>
         </thead>
         {% for our_user in our_users %}
         <tr id="{{our_user.email}}">
           <td><input type="checkbox" class="delete-checkbox" value="{{our_user.email}}"></td>
           <td class="email">{{our_user.email}}</td>
-          <td class="role_id">{{our_user.role_id}}</td>
+          <td class="role_id">
+          <select class="role_id form-select" >
+            <option value="1" {% if our_user.role_id == 1 %}selected{% endif %}>Admin</option>
+            <option value="2" {% if our_user.role_id == 2 %}selected{% endif %}>Usuari</option>
+          </select>
+        </td>
           <td class="last_login">{{our_user.last_login}}</td>
           <td class="color" style="justify-content: center;align-items: center;text-align:center;"><div class="color-box" style="background-color: rgb({{our_user.color}});"></div></td>
           <td class="info" style="justify-content: center;align-items: center;text-align:center;"><button  style="background-color: rgb({{our_user.color}});"></td>
-            <td><button onclick="deleteUser('{{our_user.email}}')">Delete</button></td>
+            <td><button onclick="deleteUserList('['+'{{our_user.email}}'+']')">Delete</button></td>
           </tr>
         {% endfor %}
       </table>
@@ -107,6 +114,7 @@
 document.getElementById('editButton').addEventListener('click', function() {
   // Make the table editable
   var cells = document.querySelectorAll('#tableusers td');
+  cells = document.querySelectorAll('.role_id');
   cells.forEach(function(cell) {
       cell.setAttribute('contenteditable', 'true');
   });
@@ -160,7 +168,7 @@ document.getElementById('deleteButton').addEventListener('click', function() {
   checkboxes.forEach(function(checkbox) {
       selectedUsers.push(checkbox.value);
   });
-   activate_modal(modal1,'Borrar ususaris del sistema','Estas segur que vols borrar els usuaris seleccionats?<br><strong>Selected users:</strong><br>'+selectedUsers.join('<br>'),selectedUsers,deleteUserList,()=>{console.log('Cancel')});
+   activate_modal('modal1','Borrar ususaris del sistema','Estas segur que vols borrar els usuaris seleccionats?<br><strong>Selected users:</strong><br>'+selectedUsers.join('<br>'),selectedUsers,deleteUserList,()=>{console.log('Cancel')});
 });
 
 async function activate_modal(id, title, body,selectionInfo, action,cancel) {
@@ -197,6 +205,10 @@ async function deleteUserList(emails) {
 
    if (!response.ok) {
      console.error('Failed to delete users');
+   }
+   else {
+     console.log('Users deleted successfully');
+     location.reload();
    }
 }
   </script>
