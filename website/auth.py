@@ -4,7 +4,7 @@ from . import sql
 from Modules.forms import LogInForm,PasswordForm,validator
 from flask import Blueprint
 from flask_login import current_user
-from .function import login_required_custom,login_required_admin
+from .function import login_required_custom,login_required_admin,login_required_admin_or_current_user
 
 auth = Blueprint("auth", __name__, template_folder='/app/templates', static_folder='/app/static')
 
@@ -55,7 +55,7 @@ def signup():
     return render_template('SignUp.html', form=form, our_SignUprequest=our_SignUprequest)
  
 @auth.route('/user/update/<string:email>', methods=['GET'])
-@login_required_custom
+@login_required_admin_or_current_user
 def update(email):
     if(current_user.is_current_user_or_admin(str(email))):
         form = PasswordForm()
@@ -66,7 +66,7 @@ def update(email):
     return redirect(url_for('auth.signup'))
     
 @auth.route('/user/update/<string:email>', methods=['POST'])
-@login_required_custom
+@login_required_admin_or_current_user
 def updatePOST(email):
     form = PasswordForm()
     if form.validate_on_submit():
@@ -82,7 +82,7 @@ def updatePOST(email):
     return redirect(url_for('update',email=email))
 
 @auth.route('/user/delete/<string:email>', methods=['POST'])
-@login_required_custom
+@login_required_admin
 def delete(email):
     if(current_user.is_current_user_or_admin(email)):
         user=sql.Users.get(email) 
@@ -102,8 +102,8 @@ def delete(email):
     return redirect(url_for('auth.signup'))
 
 
-@login_required_admin
 @auth.route('/user/signuprequest/accept/<string:email>', methods=['GET'])
+@login_required_admin
 def signuprequestaccept(email):
     if validator.is_email(email):
         user_SignUpRequest=sql.SignUpRequest.get(email)
@@ -117,8 +117,8 @@ def signuprequestaccept(email):
         
     return redirect(url_for('auth.signup'))
 
-@login_required_admin
 @auth.route('/user/signuprequest/delete/<string:email>', methods=['GET'])
+@login_required_admin
 def signuprequestdeny(email):
     if validator.is_email(email):
         user_SignUpRequest=sql.SignUpRequest.get(email)
@@ -130,8 +130,8 @@ def signuprequestdeny(email):
         
     return redirect(url_for('auth.signup'))
 
-@login_required_admin
 @auth.route('/deleteUsers', methods=['POST'])
+@login_required_admin
 def deleteUsers():
     userList=request.json['emails']
     response={"users_deleted":[], "users_not_existing":[]}
@@ -150,8 +150,8 @@ def deleteUsers():
             response.get('users_not_existing').append(email)
     return response
 
-@login_required_admin
 @auth.route('/roleUser', methods=['POST'])
+@login_required_admin
 def roleUser():
     user=request.json['email']
     response={"State":""}
@@ -160,7 +160,7 @@ def roleUser():
         if user:
             print(request.json['role'])
             sql.Users.change_role(user,request.json['role'])
-            sql.LogUsers.new( user.email,current_user.email+' changing role to '+request.json['role'])
+            sql.LogUsers.new( user.email,current_user.email+' changing role to '+str(request.json['role']))
             response['State']="OK"
         else:
             response['State']="Error"

@@ -9,7 +9,7 @@ from sqlalchemy.pool import QueuePool
 from flask_login import login_user,logout_user
 from sqlalchemy.ext.declarative import declarative_base# allows to make a class that maps to a table
 from sqlalchemy import and_,or_
-import functools
+
 # initialize the base class ootb ORM
 Base = declarative_base()
 
