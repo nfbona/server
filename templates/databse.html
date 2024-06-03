@@ -137,7 +137,7 @@ async function activate_modal(id, title, body,selectionInfo, action,cancel) {
 };
 
 function classSelected(id) {
-  var selectElement = document.getElementById('id').getElementsByClassName('role_id')[0].getElementsByTagName('select');
+  var selectElement = document.getElementById(id).getElementsByClassName('role_id')[0].getElementsByTagName('select');
   var selectedOption = selectElement.options[selectElement.selectedIndex].value;
   console.log(selectedOption);
   fetch("{{url_for('auth.roleUser')}}", {
