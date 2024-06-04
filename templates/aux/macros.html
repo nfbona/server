@@ -1,0 +1,67 @@
+{% macro modal(id, button1, button2,style) %}
+<div class="modal fade" id="{{ id }}" tabindex="-1" aria-labelledby="{{ id }}" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="{{ id }}-title"></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div id="{{id}}-body"class="modal-body">
+          {{ body }}
+        </div>
+        <div class="modal-footer">
+          <button id="{{ id }}-button-action" type="button" class="btn {{ style }}">{{ button1 }}</button>
+          <button type="{{ id }}-button-cancel" class="btn btn-secondary" data-bs-dismiss="modal">{{ button2 }}</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endmacro %}
+
+  {% macro toast() %}
+  <div class="position-fixed top-0 start-50 translate-middle-x pb-3" style="z-index: 11">
+    <div id="okToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                Event created successfully.
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+    <div id="warningToast" style="background-color: #a57100;"class="toast align-items-center text-white bg-warning border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                Warning message here.
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+  {%macro permanentToast(current_user,hours,reserves) %}
+  <div  class="toast-container position-fixed bottom-0 end-0 p-3" data-bs-autohide="false">
+    <div id="permanentToast" class="toast" data-bs-autohide="false">
+      <div class="toast-header">
+        <strong class="me-auto">User information</strong>
+      </div>
+      <div class="toast-body">
+        <ul>
+          <li><strong>Email: </strong>{{current_user.email}}</li>
+          <li><strong>Minuts restants: </strong><span id="User-timeleft">{{hours}}</span></li>
+          <li><strong>Reserves fetes: </strong><span id="User-reserves">{{reserves}}</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  {% endmacro %}
+
+
+
+  {% macro toastjs(id, message) %}
+            var toastEl = document.getElementById('{{id}}');
+            toastEl.querySelector('.toast-body').textContent = '{{message}}';
+            var toast = new bootstrap.Toast(toastEl);
+            toast.show();
+  {% endmacro %}

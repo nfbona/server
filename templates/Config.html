@@ -1,0 +1,163 @@
+{% extends "base/baseNavbar.html" %}
+{% block title %} {% endblock %}
+{% block content %} 
+
+<div id="container" class="container-fluid">
+  <div class="row">
+    <div id="left-original" class="col">
+
+      <div id="left-form">
+        <h1><strong>Reset password</strong></h1>
+        <p></p>
+
+        <form action="{{url_for('auth.update',email=our_user.email)}}" method="POST">
+          <!-- CSRF token -->
+          {{ form.hidden_tag() }}
+          <!-- Password -->
+          <div class="mb-3">
+            {{ form.password_hash.label(class="form-label") }}   
+            {{ form.password_hash(class="form-control", placeholder="Password") }}   
+          </div>
+
+          <!-- Password check -->
+          <div class="mb-3">
+            {{ form.password_check.label(class="form-label") }}   
+            {{ form.password_check(class="form-control", placeholder="Password") }}   
+          </div>
+
+          <!-- Button -->
+          {{ form.submit(class="btn btn-info") }}
+          
+        </form>
+      </div>
+
+      <div id="urvlogo">
+        <a href="https://campusvirtual.urv.cat/local/alternatelogin/index.php"> 
+          <img src="{{ url_for('static', filename='style/images/logoURVppd.png') }}">
+        </a>
+      </div>
+
+      <div id="messages">
+        {% for message in get_flashed_messages() %}
+          {% if message in ["Usuari modificat satisfactoriament.", "Usuari deletejat satisfactoriament.", "Usuari creat satisfactoriament."] %}
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% elif message == "Operació no valida." %}
+            <div class="alert alert-primary alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% else %}
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+ 
+    <div id="left" class="col-8">
+      <h1 style="display: flex;justify-content: center;">User information</h1><br>
+      <div id="user-info">
+        <p><strong>Email:</strong> <h4>{{ our_user.email }}</h4></p>
+        <p><strong>Rol: </strong> {% if our_user.is_admin_role() %}Admin{%else%}Usuari{%endif%}</p>
+      </div>
+      <div id="container" class="container-fluid" >
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+          <li class="nav-item" role="presentation">
+            <a class="nav-link active" id="userlog-tab" data-bs-toggle="tab" href="#userlog" role="tab" aria-controls="userlog" aria-selected="true">User logs</a>
+          </li>
+          <li class="nav-item" role="presentation">
+            <a class="nav-link" id="rolelog-tab" data-bs-toggle="tab" href="#schedulelog" role="tab" aria-controls="schedulelog" aria-selected="false">Future schedules</a>
+          </li>
+          <li class="nav-item" role="presentation">
+            <a class="nav-link" id="relaylog-tab" data-bs-toggle="tab" href="#relaylog" role="tab" aria-controls="relaylog" aria-selected="false">Relays logs</a>
+          </li>
+        </ul>
+        <div class="tab-content" id="myTabContent">
+          <div class="tab-pane fade show active" id="userlog" role="tabpanel" aria-labelledby="userlog-tab">
+              <table id="tableusers" class="table-heading table table-rounded" style="width:100%;">
+              <thead>
+                <tr> 
+                  <th>Email</th>
+                  <th>Acció</th>
+                  <th>Data</th>
+                </tr>
+              </thead>
+              {% for our_userlog in our_userlogs %}
+              <tr>
+              <td>{{our_userlog.user_email}}</td>
+              <td>{{our_userlog.action}}</td>
+              <td>{{our_userlog.datetime}}</td>
+              </td>
+              </tr>
+              {% endfor %}
+            </table>
+          </div>
+          <div class="tab-pane fade" id="schedulelog" role="tabpanel" aria-labelledby="schedulelog-tab">
+            <table id="tableroles" class="table-heading table table-rounded" style="width:100%;">
+              <thead>
+                <tr>  
+                  <th>Inici de schedule</th>
+                  <th>Final de schedule</th>
+                </tr>
+              </thead>
+              {% for our_schedulelog in our_schedulelogs %}
+              <tr>
+                <td>{{our_schedulelog.start_time}}</td>
+                <td>{{our_schedulelog.end_time}}</td>
+              </tr>
+              {% endfor %}
+            </table>
+          </div>
+          <div class="tab-pane fade" id="relaylog" role="tabpanel" aria-labelledby="relaylog-tab">
+             <table id="tablerelays" class="table-heading table table-rounded" style="width:100%;">
+              <thead>
+                <tr>  
+                  <th>Usuari</th>
+                  <th>Relay id</th>
+                  <th>Acció</th>
+                  <th>Data</th>
+                </tr>
+              </thead>
+              {% for our_relaylog in our_relaylogs %}
+              <tr>
+                <td>{{our_relaylog.relay_id}}</td>
+                <td>{{our_relaylog.action}}</td>
+                <td>{{our_relaylog.datetime}}</td>
+              </tr>
+              {% endfor %}
+            </table>
+          </div>
+        </div>
+      </div>
+      <div id="right-image" style="height: 100%;">
+      </div>
+      
+
+
+    </div>
+
+  </div>
+</div>
+<script>
+
+  $(document).ready(function() {
+      $('.table').DataTable({
+        paging: false, // Disable pagination
+        searching: true, // Disable searching
+        info: true, // Disable info (the message showing the number of entries)
+        ordering: true, // Enable column ordering
+    });
+  } );
+
+  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+  var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl)
+  })
+
+  </script>
+{% endblock %}

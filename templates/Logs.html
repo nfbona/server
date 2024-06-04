@@ -1,0 +1,126 @@
+
+{% extends "base/baseNavbar.html" %}
+{% block title %}  {% endblock %}
+{% block content %} 
+
+
+<div id="container" class="container-fluid" >
+  <ul class="nav nav-tabs" id="myTab" role="tablist">
+    <li class="nav-item" role="presentation">
+      <a class="nav-link active" id="userlog-tab" data-bs-toggle="tab" href="#userlog" role="tab" aria-controls="userlog" aria-selected="true">User logs</a>
+    </li>
+    <li class="nav-item" role="presentation">
+      <a class="nav-link" id="rolelog-tab" data-bs-toggle="tab" href="#schedulelog" role="tab" aria-controls="schedulelog" aria-selected="false">Schedule logs</a>
+    </li>
+    <li class="nav-item" role="presentation">
+      <a class="nav-link" id="relaylog-tab" data-bs-toggle="tab" href="#relaylog" role="tab" aria-controls="relaylog" aria-selected="false">Relays logs</a>
+    </li>
+    <li class="nav-item" role="presentation">
+      <a class="nav-link" id="signuprequestlog-tab" data-bs-toggle="tab" href="#signuprequestlog" role="tab" aria-controls="signuplog" aria-selected="false">Signup requests logs</a>
+    </li>
+  </ul>
+  <div class="tab-content" id="myTabContent">
+    <div class="tab-pane fade show active" id="userlog" role="tabpanel" aria-labelledby="userlog-tab">
+        <table id="tableusers" class="table-heading table table-rounded" style="width:100%;">
+        <thead>
+          <tr> 
+            <th>Email</th>
+            <th>Acció</th>
+            <th>Data</th>
+          </tr>
+        </thead>
+        {% for our_userlog in our_userlogs %}
+        <tr>
+        <td>{{our_userlog.user_email}}</td>
+        <td>{{our_userlog.action}}</td>
+        <td>{{our_userlog.datetime}}</td>
+        </td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+    <div class="tab-pane fade" id="schedulelog" role="tabpanel" aria-labelledby="schedulelog-tab">
+      <table id="tableroles" class="table-heading table table-rounded" style="width:100%;">
+        <thead>
+          <tr>  
+            <th>Usuari</th>
+            <th>Schedule id</th>
+            <th>Acció</th>
+            <th>Inici de schedule</th>
+            <th>Final de schedule</th>
+          </tr>
+        </thead>
+        {% for our_schedulelog in our_schedulelog %}
+        <tr>
+          <td>{{our_schedulelog.user_email}}</td>
+          <td>{{our_schedulelog.schedule_id}}</td>
+          <td>{{our_schedulelog.action}}</td>
+          <td>{{our_schedulelog.start_time}}</td>
+          <td>{{our_schedulelog.end_time}}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+    <div class="tab-pane fade" id="relaylog" role="tabpanel" aria-labelledby="relaylog-tab">
+       <table id="tablerelays" class="table-heading table table-rounded" style="width:100%;">
+        <thead>
+          <tr>  
+            <th>Usuari</th>
+            <th>Relay id</th>
+            <th>Acció</th>
+            <th>Data</th>
+          </tr>
+        </thead>
+        {% for our_relaylog in our_relaylogs %}
+        <tr>
+          <td>{{our_relaylog.user_email}}</td>
+          <td>{{our_relaylog.relay_id}}</td>
+          <td>{{our_relaylog.action}}</td>
+          <td>{{our_relaylog.datetime}}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+    <div class="tab-pane fade" id="signuprequestlog" role="tabpanel" aria-labelledby="signuprequestlog-tab">
+      <table id="tablerelays" class="table-heading table table-rounded" style="width:100%;">
+       <thead>
+         <tr>  
+           <th>Acceptador</th>
+           <th>Usuari</th>
+           <th>Acció</th>
+           <th>Data</th>
+         </tr>
+       </thead>
+       {% for our_signuprequestlog in our_signuprequestlogs %}
+       <tr>
+         <td>{{our_signuprequestlog.user_accepter}}</td>
+         <td>{{our_signuprequestlog.email}}</td>
+         <td>{{our_signuprequestlog.action}}</td>
+         <td>{{our_signuprequestlog.datetime}}</td>
+       </tr>
+       {% endfor %}
+     </table>
+   </div>
+  </div>
+</div>
+
+
+<script>
+
+  $(document).ready(function() {
+      $('.table').DataTable({
+        paging: false, // Disable pagination
+        searching: true, // Disable searching
+        info: true, // Disable info (the message showing the number of entries)
+        ordering: true, // Enable column ordering
+    });
+  } );
+
+  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+  var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl)
+  })
+
+  </script>
+
+{% endblock %}
