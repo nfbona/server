@@ -2,7 +2,6 @@
 from flask import Flask, redirect, url_for
 from dotenv import dotenv_values
 from datetime import timedelta
-
 from flask_login import LoginManager, current_user
 from Modules.models import db, SQLClass,CustomAnonymousUser
 
@@ -51,6 +50,15 @@ def init_login_manager(app):
     
     return app, login_manager
 
+def create_admin_user_if_not_exists():
+    user = sql.Users.get('admin@admin.admin')
+    if not user:
+        # User doesn't exist, so create a new user
+        new_user = sql.Users.new('admin@admin.admin','admin',1)
+        return new_user
+    else:
+        # User already exists
+        return user
 # Function to create Flask app
 def create_app():
     crsf_key = get_environ()  
@@ -59,7 +67,7 @@ def create_app():
     app = init_sql(app) 
     app = init_blueprints(app) 
     app.app_context().push()  
-
+    
     # Load user
     @login_manager.user_loader
     def user_loader(user_email):
@@ -75,7 +83,7 @@ def create_app():
     def create_tables_sql():
         print("Creating tables...")
         db.create_all()
-        sql.Relays.init()
+        create_admin_user_if_not_exists()
         
     @login_manager.needs_refresh_handler
     def refresh_login():

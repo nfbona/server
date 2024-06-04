@@ -24,9 +24,9 @@ CREATE TABLE if not exists users (
 
 CREATE TABLE if not exists relays (
     id INT AUTO_INCREMENT, 
-    state INT, 
+    is_active BOOLEAN DEFAULT FALSE,
     date_modified DATETIME, 
-    name VARCHAR(100) NOT NULL,
+    _name VARCHAR(100) NOT NULL,
     PRIMARY KEY(id)
     );
 
@@ -93,21 +93,16 @@ ON DUPLICATE KEY UPDATE
     id = VALUES(id);
 
 
-INSERT INTO users (email ,date_added ,last_login, password_hash,  role_id,color)
-    VALUES ('admin@admin.admin', NOW(),NOW() ,'sha256$39uHUtGQLHwB6IRS$75457a9fe742bc2852fce204f1b8fba7a91a678a05efe2a9e723cf52f9a99d30',1,'176,176,0')
-ON DUPLICATE KEY UPDATE
-    email = VALUES(email);
-
-INSERT INTO relays (id,state,date_modified,name) 
+INSERT INTO relays (id,date_modified,_name) 
 VALUES 
-    ( 1, 0, NOW(), 'Relay1'),
-    ( 2, 0, NOW(), 'Relay2'),
-    ( 3, 0, NOW(), 'Relay3'),
-    ( 4, 0, NOW(), 'Relay4'),
-    ( 5, 0, NOW(), 'Relay5'),
-    ( 6, 0, NOW(), 'Relay6'),
-    ( 7, 0, NOW(), 'Relay7'),
-    ( 8, 0, NOW(), 'Relay8')
+    ( 1,  NOW(), 'Relay1'),
+    ( 2,  NOW(), 'Relay2'),
+    ( 3,  NOW(), 'Relay3'),
+    ( 4,  NOW(), 'Relay4'),
+    ( 5,  NOW(), 'Relay5'),
+    ( 6,  NOW(), 'Relay6'),
+    ( 7,  NOW(), 'Relay7'),
+    ( 8,  NOW(), 'Relay8')
 ON DUPLICATE KEY UPDATE
     id = VALUES(id);
 

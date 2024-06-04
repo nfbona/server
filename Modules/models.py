@@ -10,6 +10,7 @@ from flask_login import login_user,logout_user
 from sqlalchemy.ext.declarative import declarative_base# allows to make a class that maps to a table
 from sqlalchemy import and_,or_
 import pytz
+import hashlib
 # initialize the base class ootb ORM
 Base = declarative_base()
 
@@ -19,8 +20,7 @@ db = SQLAlchemy()
 # Between two requests the time to wait to change the relay
 TIMETOWAIT=10
 MINUTS_USUARIS=120
-#import to password hashing
-from werkzeug.security import generate_password_hash,check_password_hash
+
    
 class SQLClass:
     def __init__(self, db_password):
@@ -140,14 +140,14 @@ class Users(UserMixin,BaseModel):
     _is_active= db.Column('is_active',db.Boolean,nullable=False,default=True)
     
     
-    def __init__(self,email,password):
+    def __init__(self,email,password,admin=2):
         self.is_active=True
         self.email=email
         self.password_hash=password
         self.date_modified=datetime.now(pytz.timezone('Europe/Madrid'))
         self.last_login=datetime.now(pytz.timezone('Europe/Madrid'))
         self.color=str(random.randint(0, 176))+','+str(random.randint(0, 176))+','+str(random.randint(0, 176))
-        
+        self.role_id=admin
     # Setters and getters
     @property
     def email(self):
@@ -163,7 +163,7 @@ class Users(UserMixin,BaseModel):
 
     @password_hash.setter
     def password_hash(self, password):
-        self._password_hash = generate_password_hash(password, method='scrypt')
+        self._password_hash = hashlib.scrypt(password.encode(), salt=self.email.encode(), n=16384,r=8,p=1,dklen=64).hex()
 
     @property
     def role_id(self):
@@ -203,8 +203,8 @@ class Users(UserMixin,BaseModel):
             return self.email
         return ""
 
-    def checkPass(self,password):
-        return check_password_hash(self.password_hash,password)
+    def checkPass(self, password):
+        return hashlib.scrypt(password.encode(), salt=self.email.encode(), n=16384,r=8,p=1,dklen=64).hex() == self._password_hash
         
     def update_last_login(self):
         self.last_login=datetime.now(pytz.timezone('Europe/Madrid'))
@@ -226,7 +226,7 @@ class Users(UserMixin,BaseModel):
     
     def user_event_validation(self,user):
         return not(self.is_token_expired()) and self.is_current_user_or_admin(user)
-    
+        
     @classmethod
     def change_role(cls,user,role_id):
         user.role_id=role_id      
@@ -298,22 +298,22 @@ class Roles( BaseModel):
 class Relays(BaseModel):
     __tablename__ = 'relays'
     _id = db.Column('id', db.Integer, primary_key=True, nullable=False)
-    _state = db.Column('state', db.Integer, nullable=False)
+    _is_active = db.Column('is_active', db.Boolean,nullable=False,default=False)
     _date_modified = db.Column('date_modified', db.DateTime, nullable=False)
-    _name = db.Column('name', db.String(100), nullable=False, unique=True)
+    _name = db.Column('_name', db.String(100), nullable=False, unique=True)
 
     def __init__(self,id,name):
         self.id=id
         self.name=name
-        self.state=0
+        self.is_active=False
         
     @property
-    def state(self):
-        return self._state
+    def is_active(self):
+        return self._is_active
 
-    @state.setter
-    def state(self, state):
-        self._state = state
+    @is_active.setter
+    def is_active(self, is_active):
+        self._is_active = is_active
         self._date_modified = datetime.now(pytz.timezone('Europe/Madrid'))
 
     @property
@@ -337,23 +337,18 @@ class Relays(BaseModel):
         return self._date_modified
     
     def is_wait_time_satisfied(self):
-        return (datetime.now(pytz.timezone('Europe/Madrid'))-timedelta(seconds=TIMETOWAIT)) > self.date_modified
+        return (datetime.now(pytz.timezone('Europe/Madrid'))-timedelta(seconds=TIMETOWAIT)).astimezone() > self._date_modified.astimezone()
 
     @classmethod
     def get(cls,id): 
         session = cls.db.Session()
-        relay = session.query(cls).filter_by(id=id).first()
+        relay = session.query(cls).filter_by(_id=id).first()
         session.close()
         return relay
-
-    @classmethod
-    def init(cls):
-        relays=cls.get_all()
-        if not relays:
-            for i in range(1,9):
-                relay=cls(i,f"Relay {i}")
-                cls.new(relay)
-        return True
+    
+    def change_state(self):
+        self._is_active = not self.is_active
+        return self._is_active
 
 class Schedules(BaseModel):
     __tablename__ = 'schedule'
@@ -399,7 +394,7 @@ class Schedules(BaseModel):
     @classmethod
     def get_future_user_schedules(cls,email):
         session = cls.db.Session()
-        schedules = session.query(Schedules).filter_by(user_email=email).filter(Schedules.end_time>datetime.now(pytz.timezone('Europe/Madrid'))).all()
+        schedules = session.query(Schedules).filter_by(user_email=email).filter(Schedules.end_time>datetime.now(pytz.timezone('Europe/Madrid'))).order_by(Schedules.end_time).all()
         session.close()
         return schedules  
     

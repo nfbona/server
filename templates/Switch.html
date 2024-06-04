@@ -2,28 +2,55 @@
 {% block title %} {% endblock %}
 {% block content %} 
 
+<style>
+  .form-check-input:checked {
+    background-color: #198754;
+    border-color: #198754;
+  }
+  
+  .form-check-input:not(:checked) {
+    background-color: #dc3545;
+    border-color: #dc3545;
+  }
+
+</style>
+
 <div id="container" class="container-fluid">
   <div class="row">
     <div id="left" class="col">
-      <h1>LEFT</h1>
+      {%if not(is_users)%}
+      <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <strong>No tens accés als relays!</strong>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+      {% endif%}
+      
+      <h1>Relays</h1>
       <table class="table-heading table table-rounded">
         <thead>
           <tr>
-            <th>Router</th>
-            <th>Time to modify</th>
+            <th class="text-center align-middle">Active</th>
+            <th class="text-center align-middle">Name</th>
+            <th class="text-center align-middle">Time to modify</th>
           </tr>
         </thead>
         <tbody>
           {% for relay in relays %}
           <tr>
-            <td>
-              <div class="form-check">
-                <input id="checkbox{{ relay.id }}" class="form-check-input" type="checkbox" value="{{ relay.id }}" onclick="disableCheckbox(this)">
-                <label class="form-check-label" for="checkbox{{ relay.id }}">{{ relay.name }}</label>
+            <td class="justify-content-center align-items-center">
+              <div class="form-check form-switch">
+                <input id="checkbox{{ relay._id }}" class="form-check-input" type="checkbox" value="{{ relay._id }}" {% if relay.is_active %} checked {% endif %} onclick="disableCheckbox(this)" {%if not(is_users) %} disabled {% endif %}>                
               </div>
             </td>
-            <td>
-              <p style="display:inline;" id="timer{{ relay.id }}"></p>
+            <td class="justify-content-center align-items-center">
+            {% if current_user.is_admin_role() %}
+              <label class="form-check-label" for="checkbox{{ relay.state }}" relay="{{ relay._id }}" contenteditable="true">{{ relay.name }}</label>
+            {% else %}
+              <label class="form-check-label"for="checkbox{{ relay.state }}" >{{ relay.name }}</label>
+            {% endif %}
+            </td>
+            <td class="justify-content-center align-items-center">
+              <p style="display:inline;" id="timer{{ relay._id }}"></p>
             </td>
           </tr>
           {% endfor %}
@@ -32,12 +59,7 @@
     </div>
     
     
-    {%if current_user.is_user_role()%}
-    <div class="alert alert-warning alert-dismissible fade show" role="alert">
-      <strong>Heads up!</strong> This is an important message.
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-
+    {%if not(is_users) %}
     <div class="fixed-bottom">
       <div class="container text-center bg-light py-3" style="color: rgba(25, 127, 185, 0.534);">
         <h4>No oblidis de demanar hora en el schedule!</h4>
@@ -49,6 +71,7 @@
 </div>
 
 <script>
+  
   var timer = 10;
 
   function Timer1(relay, time, checkid) {
@@ -95,6 +118,23 @@
       }
     });
   }
+
+  {%if current_user.is_admin_role() %}
+  var elements = document.getElementsByClassName('form-check-label');
+
+  for (var i = 0; i < elements.length; i++) {
+    elements[i].addEventListener('blur', function() {
+      var newValue = this.getAttribute('relay');
+      var newName = this.innerText;
+      var xhr = new XMLHttpRequest();
+      console.log(JSON.stringify({'relay_id': newValue, 'name': newName}));
+      xhr.open('POST', '{{url_for('pages.rename_relay')}}', true);
+      xhr.setRequestHeader('Content-Type', 'application/json; charset=utf-8');
+      xhr.send(JSON.stringify({'relay_id': newValue, 'name': newName}));
+    });
+  }
+  {% endif %}
+
 </script>
 
 {% endblock %}

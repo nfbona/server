@@ -5,6 +5,7 @@ from Modules.forms import LogInForm,PasswordForm,validator
 from flask import Blueprint
 from flask_login import current_user
 from .function import login_required_custom,login_required_admin,login_required_admin_or_current_user
+from html import escape
 
 auth = Blueprint("auth", __name__, template_folder='/app/templates', static_folder='/app/static')
 
@@ -76,9 +77,7 @@ def update(email):
             
         return redirect(url_for('auth.update',email=email))
     
-    
     return render_template('Config.html', form=form,our_user=name_update,our_relaylogs=our_relaylogs,our_userlogs=our_userlogs,our_schedulelogs=our_schedulelogs)
-
     
 @auth.route('/user/delete/<string:email>', methods=['POST'])
 @login_required_admin
@@ -132,7 +131,7 @@ def signuprequestdeny(email):
 @auth.route('/deleteUsers', methods=['POST'])
 @login_required_admin
 def deleteUsers():
-    userList=request.json['emails']
+    userList=escape(request.json['emails'])
     response={"users_deleted":[], "users_not_existing":[]}
     for email in userList:
         if(validator.is_email(email)):
@@ -152,17 +151,16 @@ def deleteUsers():
 @auth.route('/roleUser', methods=['POST'])
 @login_required_admin
 def roleUser():
-    user=request.json['email']
-    response={"State":""}
+    user=escape(request.json['email'])
+    response={"is_active":""}
     if(validator.is_email(user)):
         user=sql.Users.get(user)
         if user:
-            print(request.json['role'])
-            sql.Users.change_role(user,request.json['role'])
-            sql.LogUsers.new( user.email,current_user.email+' changing role to '+str(request.json['role']))
-            response['State']="OK"
+            sql.Users.change_role(user,escape(request.json['role']))
+            sql.LogUsers.new( user.email,current_user.email+' changing role to '+str(escape(request.json['role'])))
+            response['is_active']="OK"
         else:
-            response['State']="Error"
+            response['is_active']="Error"
     else:
-        response['State']="Error"
+        response['is_active']="Error"
     return response

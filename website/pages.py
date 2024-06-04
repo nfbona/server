@@ -1,10 +1,12 @@
 from flask import Blueprint,  render_template, request,jsonify
 from flask_login import current_user
 from . import sql
-from .function import get_scheduled_events,create_event_schedule,update_event_schedule,delete_event_schedule
+from .function import get_scheduled_events,create_event_schedule,update_event_schedule,delete_event_schedule,GPIO_state
 from Modules.forms import UserField
-from .function import login_required_custom, login_required_admin,time_is_valid,conditions_to_update_or_create_event
+from .function import login_required_custom, login_required_admin,time_is_valid_end,conditions_to_update_or_create_event,is_user_valid
 from dateutil.parser import parse
+from html import escape
+import re
 
 
 pages = Blueprint("pages", __name__,template_folder='/app/templates', static_folder='/app/static')
@@ -14,7 +16,8 @@ pages = Blueprint("pages", __name__,template_folder='/app/templates', static_fol
 @login_required_custom
 def home_page():
     relays=sql.Relays.get_all()
-    return render_template('Switch.html',relays=relays)
+    is_user=is_user_valid(current_user.email) or current_user.is_admin_role()
+    return render_template('Switch.html',relays=relays,is_users=is_user)
  
 
 @pages.route('/user', methods=['POST','GET'])
@@ -31,15 +34,23 @@ def user():
 @pages.route('/json', methods=['POST'])
 @login_required_custom
 def json():
-    rely=sql.Relays.get(request.json['id'])
-    if rely and rely.is_wait_time_satisfied():
-        rely.state = request.json['value']
-        sql.Relays.modify(rely)
-        sql.LogRelays.new(current_user.email,rely.id,rely.state)
-        relays = {"Error":"0","relay":str(request.json['id'])}
-    else:
-        relays = {"Error":"1","relay":str(request.json['id'])}
+    
+    if current_user.is_admin_role() or is_user_valid(current_user.email):
+        relay=escape(request.json['id'])
+        relay = sql.Relays.get(relay)
+        if relay and relay.is_wait_time_satisfied():
+            if relay:
+                relay.change_state()
+                sql.LogRelays.new(current_user.email,str(escape(request.json['id'])),relay.is_active)
+                sql.Relays.modify(relay)
+                GPIO_state(int(relay._id),relay.is_active)
 
+            relays = {"Error":"0","relay":str(escape(request.json['id']))}
+        else:
+            relays = {"Error":"1","relay":str(escape(request.json['id']))}
+    else:
+        relays = {"Error":"1","relay":str(escape(request.json['id']))}
+    
     return relays
 
 @pages.route('/history', methods=['POST','GET'])
@@ -98,7 +109,22 @@ def update_event():
 def delete_event():
     delete_event=False
     
-    if current_user.user_event_validation(request.json['title']) and time_is_valid(parse(request.json['start']),parse(request.json['end'])):
+    if current_user.user_event_validation(escape(request.json['title'])) and time_is_valid_end(parse(escape(request.json['start'])),parse(escape(request.json['end']))):
         delete_event=delete_event_schedule(request)
     
     return jsonify({"Deleted":delete_event})
+
+@pages.route('/rename_relay', methods=['POST'])
+@login_required_admin
+def rename_relay():
+    response = {"Error":"1"}
+    new_name = escape(request.json['name'])
+    if (current_user.is_admin_role() and len(new_name) > 0):
+        relay=escape(request.json['relay_id'])
+        relay = sql.Relays.get(relay)
+        if relay:
+            relay.name = new_name
+            sql.Relays.modify(relay)
+            response = {"Error":"0"}
+    
+    return jsonify(response)
