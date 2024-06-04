@@ -29,6 +29,7 @@
             <th>Últim login</th>
             <th>Color</th>
             <th>Informació</th>
+            <th>Delete</th>
           </tr>
         </thead>
         {% for our_user in our_users %}
@@ -44,7 +45,7 @@
           <td class="last_login">{{our_user.last_login}}</td>
           <td class="color" style="justify-content: center;align-items: center;text-align:center;"><div class="color-box" style="background-color: rgb({{our_user.color}});"></div></td>
           <td class="info" style="justify-content: center;align-items: center;text-align:center;"><a href="{{url_for('auth.update',email=our_user.email)}}" class="btn btn-primary"><button class="btn btn-info">Info</button></a></td>
-            <td><button class="btn btn-danger" onclick="deleteUser('{{our_user.email}}')">Delete</button></td>
+          <td><button class="btn btn-danger" onclick="deleteUser('{{our_user.email}}')">Delete</button></td>
           </tr>
         {% endfor %}
       </table>

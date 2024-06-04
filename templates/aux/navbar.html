@@ -24,8 +24,9 @@
 
     <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
       <div class="offcanvas-header">
-        <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Index</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        <h2 class="offcanvas-title display-6 text-uppercase" id="offcanvasNavbarLabel" >______Index______</h3>
+          <hr >
+          <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
       </div>
       <div class="offcanvas-body">
         <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
@@ -37,30 +38,34 @@
             <a class="nav-link" href="{{url_for('auth.signup')}}">Signup</a>
           </li>        
           {% endif %}
-          {% if not(current_user.is_anonymous) and current_user.is_admin_role() %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{url_for('pages.database')}}">Webpage info</a>
-          </li> 
-          <li class="nav-item">
-            <a class="nav-link" href="{{url_for('pages.logs')}}">Activity logs</a>
-          </li> 
-          <li class="nav-item">
-            <a class="nav-link" href="{{url_for('auth.signup')}}">User sign up requests</a>
-          </li> 
-          {% endif %}
           {% if not(current_user.is_anonymous) %}
+          <h3 class="dropdown-header display-6 text-uppercase text-center" style="font-size: 1.2rem; background-color: #B3E0FF;">Usage</h3>
           <li class="nav-item">
             <a class="nav-link" href="{{url_for('pages.schedule')}}">Schedule</a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="{{url_for('pages.home_page')}}">Switch</a>
           </li>     
+          <h3 class="dropdown-header display-6 text-uppercase text-center" style="font-size: 1.2rem; background-color: #B3E0FF;">User</h3>
           <li class="nav-item">
-            <a class="nav-link active" aria-current="page" href="{{url_for('pages.configuration')}}">Config</a>
+            <a class="nav-link active" aria-current="page" href="{{url_for('auth.update',email=current_user.email)}}">Config</a>
           </li>
           <li class="nav-item">
             <a class="nav-link" aria-current="page" href="{{url_for('auth.logout')}}">Logout</a>
           </li>
+          {% endif %}
+          {% if not(current_user.is_anonymous) and current_user.is_admin_role() %}
+          <br>
+          <h3 class="dropdown-header display-6 text-uppercase text-center" style="font-size: 1.2rem; background-color: #B3E0FF;">Configuration</h3>
+          <li class="nav-item">
+            <a class="nav-link" href="{{url_for('auth.signup')}}">Sign up requests</a>
+          </li> 
+          <li class="nav-item">
+            <a class="nav-link" href="{{url_for('pages.database')}}">System info</a>
+          </li> 
+          <li class="nav-item">
+            <a class="nav-link" href="{{url_for('pages.logs')}}">Activity logs</a>
+          </li> 
           {% endif %}
         </ul>
       </div>

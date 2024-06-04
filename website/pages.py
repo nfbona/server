@@ -5,7 +5,7 @@ from .function import get_scheduled_events,create_event_schedule,update_event_sc
 from Modules.forms import UserField
 from .function import login_required_custom, login_required_admin,time_is_valid,conditions_to_update_or_create_event
 from dateutil.parser import parse
-from datetime import timedelta
+
 
 pages = Blueprint("pages", __name__,template_folder='/app/templates', static_folder='/app/static')
 
@@ -47,11 +47,6 @@ def json():
 def history():
     return render_template('History.html')
 
-@pages.route('/configuration', methods=['POST','GET'])
-@login_required_custom
-def configuration():
-    return render_template('Configuration.html', userEmail=current_user.email)
-
 @pages.route('/database', methods=['POST','GET'])
 @login_required_admin
 def database():
@@ -74,7 +69,7 @@ def logs():
 def schedule():
     modified_list= get_scheduled_events()
     hours=sql.Schedules.get_time_user(current_user)
-    userEventCount=len(sql.Schedules.get_future_user_schedules(current_user))
+    userEventCount=len(sql.Schedules.get_future_user_schedules(current_user.email))
     
     return render_template('schedule.html',all_events=modified_list,current_user=current_user,hours=hours,userEventCount=userEventCount)
 

@@ -54,33 +54,32 @@ def signup():
     form.clean() 
     return render_template('SignUp.html', form=form, our_SignUprequest=our_SignUprequest)
  
-@auth.route('/user/update/<string:email>', methods=['GET'])
+@auth.route('/user/update/<string:email>', methods=['GET','POST'])
 @login_required_admin_or_current_user
 def update(email):
-    if(current_user.is_current_user_or_admin(str(email))):
-        form = PasswordForm()
-        name_update= sql.Users.get(email)
-        #Validate form
-        return render_template('UpdateUser.html', form=form,our_user=name_update)
-    flash("Not valid operation.")
-    return redirect(url_for('auth.signup'))
-    
-@auth.route('/user/update/<string:email>', methods=['POST'])
-@login_required_admin_or_current_user
-def updatePOST(email):
     form = PasswordForm()
-    if form.validate_on_submit():
-        email=str(email)
-        if(current_user.is_current_user_or_admin(email)):
+    if request.method == 'GET':
+        name_update= sql.Users.get(email)
+        if name_update:
+            our_userlogs=sql.LogUsers.get_all_user_logs(email)
+            our_schedulelogs=sql.Schedules.get_future_user_schedules(email)
+            our_relaylogs=sql.LogRelays.get_all_user_logs(email)
+        
+    if request.method == 'POST': 
+        form.email.data=email   
+        if form.validate_on_submit():
             user=sql.Users.get(email)
             user.password_hash=form.password_hash.data
             sql.Users.modify(user)
             sql.LogUsers.new(current_user.email,'Update password')
             flash("Usuari modificat satisfactoriament.")
-        
-    form.clean()
-    return redirect(url_for('update',email=email))
+            
+        return redirect(url_for('auth.update',email=email))
+    
+    
+    return render_template('Config.html', form=form,our_user=name_update,our_relaylogs=our_relaylogs,our_userlogs=our_userlogs,our_schedulelogs=our_schedulelogs)
 
+    
 @auth.route('/user/delete/<string:email>', methods=['POST'])
 @login_required_admin
 def delete(email):

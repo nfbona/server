@@ -6,7 +6,7 @@
   <div class="row">
     <div id="left" class="col">
       <h1>LEFT</h1>
-      <table class="table table-striped">
+      <table class="table-heading table table-rounded">
         <thead>
           <tr>
             <th>Router</th>
@@ -30,9 +30,21 @@
         </tbody>
       </table>
     </div>
-    <div id="right" class="col-3">
-      <h1>Right</h1>
+    
+    
+    {%if current_user.is_user_role()%}
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+      <strong>Heads up!</strong> This is an important message.
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
+
+    <div class="fixed-bottom">
+      <div class="container text-center bg-light py-3" style="color: rgba(25, 127, 185, 0.534);">
+        <h4>No oblidis de demanar hora en el schedule!</h4>
+        <p>Mira el schedule per a reservar un temps per tindre accés a obrir o tancar els relays. Clica <a href="{{url_for('pages.schedule')}}">aqui</a> per veure i reservar.</p>
+      </div>
+    </div>
+    {% endif %}
   </div>
 </div>
 

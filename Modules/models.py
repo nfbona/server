@@ -9,7 +9,7 @@ from sqlalchemy.pool import QueuePool
 from flask_login import login_user,logout_user
 from sqlalchemy.ext.declarative import declarative_base# allows to make a class that maps to a table
 from sqlalchemy import and_,or_
-
+import pytz
 # initialize the base class ootb ORM
 Base = declarative_base()
 
@@ -131,8 +131,8 @@ class CustomAnonymousUser(AnonymousUserMixin):
 class Users(UserMixin,BaseModel):
     __tablename__ = 'users'
     _email = db.Column('email',db.String(100), primary_key=True)
-    _date_added = db.Column('date_added',db.DateTime, default=datetime.now)
-    last_login = db.Column('last_login',db.DateTime, default=datetime.now)
+    _date_added = db.Column('date_added',db.DateTime, default=datetime.now(pytz.timezone('Europe/Madrid')))
+    last_login = db.Column('last_login',db.DateTime, default=datetime.now(pytz.timezone('Europe/Madrid')))
     _password_hash= db.Column('password_hash',db.String(257),nullable=False)
     _role_id = db.Column('role_id',db.Integer, db.ForeignKey('roles.id'),nullable=False,default=2)
     _color = db.Column('color',db.String(20))
@@ -144,8 +144,8 @@ class Users(UserMixin,BaseModel):
         self.is_active=True
         self.email=email
         self.password_hash=password
-        self.date_modified=datetime.now()
-        self.last_login=datetime.now()
+        self.date_modified=datetime.now(pytz.timezone('Europe/Madrid'))
+        self.last_login=datetime.now(pytz.timezone('Europe/Madrid'))
         self.color=str(random.randint(0, 176))+','+str(random.randint(0, 176))+','+str(random.randint(0, 176))
         
     # Setters and getters
@@ -207,7 +207,7 @@ class Users(UserMixin,BaseModel):
         return check_password_hash(self.password_hash,password)
         
     def update_last_login(self):
-        self.last_login=datetime.now()
+        self.last_login=datetime.now(pytz.timezone('Europe/Madrid'))
        
     def is_admin_role(self):
         return self.role_id==1
@@ -266,7 +266,7 @@ class Roles( BaseModel):
     __tablename__ = 'roles'
     _id = db.Column('id', db.Integer, primary_key=True, unique=True)
     _name = db.Column('name', db.String(100), nullable=False, unique=True)
-    date_added = db.Column('date_added',db.DateTime, default=datetime.now)
+    date_added = db.Column('date_added',db.DateTime, default=datetime.now(pytz.timezone('Europe/Madrid')))
 
     def __init__(self, id, name):
         self._id = id
@@ -314,7 +314,7 @@ class Relays(BaseModel):
     @state.setter
     def state(self, state):
         self._state = state
-        self._date_modified = datetime.now()
+        self._date_modified = datetime.now(pytz.timezone('Europe/Madrid'))
 
     @property
     def name(self):
@@ -337,7 +337,7 @@ class Relays(BaseModel):
         return self._date_modified
     
     def is_wait_time_satisfied(self):
-        return (datetime.now()-timedelta(seconds=TIMETOWAIT)) > self.date_modified
+        return (datetime.now(pytz.timezone('Europe/Madrid'))-timedelta(seconds=TIMETOWAIT)) > self.date_modified
 
     @classmethod
     def get(cls,id): 
@@ -385,21 +385,21 @@ class Schedules(BaseModel):
     @classmethod
     def get_future_schedules(cls):
         session = cls.db.Session()
-        schedules = session.query(Schedules).filter(Schedules.end_time>datetime.now()).all()
+        schedules = session.query(Schedules).filter(Schedules.end_time>datetime.now(pytz.timezone('Europe/Madrid'))).all()
         session.close()
         return schedules
     
     @classmethod
     def get_past_schedules(cls):
         session = cls.db.Session()
-        schedules = session.query(Schedules).filter(Schedules.end_time<=datetime.now()).all()
+        schedules = session.query(Schedules).filter(Schedules.end_time<=datetime.now(pytz.timezone('Europe/Madrid'))).all()
         session.close()
         return schedules   
     
     @classmethod
-    def get_future_user_schedules(cls,user):
+    def get_future_user_schedules(cls,email):
         session = cls.db.Session()
-        schedules = session.query(Schedules).filter_by(user_email=user.email).filter(Schedules.end_time>datetime.now()).all()
+        schedules = session.query(Schedules).filter_by(user_email=email).filter(Schedules.end_time>datetime.now(pytz.timezone('Europe/Madrid'))).all()
         session.close()
         return schedules  
     
@@ -420,7 +420,7 @@ class Schedules(BaseModel):
             or_(
                 and_(
                     Schedules.user_email == user.email,
-                    Schedules.end_time <= datetime.now()
+                    Schedules.end_time <= datetime.now(pytz.timezone('Europe/Madrid'))
                 ),                
                 and_(
                     Schedules.user_email != user.email
@@ -438,7 +438,7 @@ class Schedules(BaseModel):
     
     @classmethod
     def get_time_user(cls,user):
-        events_from_user=cls.get_future_user_schedules(user)
+        events_from_user=cls.get_future_user_schedules(user.email)
         max_minutes=MINUTS_USUARIS
         
         if events_from_user is None:
@@ -503,7 +503,7 @@ class SignUpRequest(BaseModel):
  
 class Log(BaseModel):
     __abstract__ = True
-    datetime = db.Column('datetime',db.DateTime, nullable=False, default=datetime.now)
+    datetime = db.Column('datetime',db.DateTime, nullable=False, default=datetime.now(pytz.timezone('Europe/Madrid')))
     id = db.Column('id',db.Integer, primary_key=True)
     action = db.Column('action',db.String(100), nullable=False)
     
@@ -514,6 +514,14 @@ class LogUsers(Log):
     def __init__(self,user_email,action):
         self.user_email=user_email
         self.action=action
+        
+    @classmethod
+    def get_all_user_logs(cls,email):
+        session = cls.db.Session()
+        logs = session.query(LogUsers).filter_by(user_email=email).all()
+        session.close()
+        return logs
+    
 
 class LogRelays(Log):
     __tablename__ = 'log_relays'
@@ -525,12 +533,19 @@ class LogRelays(Log):
         self.relay_id=relay_id
         self.action=action
           
+    @classmethod
+    def get_all_user_logs(cls,email):
+        session = cls.db.Session()
+        logs = session.query(LogRelays).filter_by(user_email=email).all()
+        session.close()
+        return logs     
+          
 class LogSchedules(Log):
     __tablename__ = 'log_schedules'
     user_email = db.Column('user_email',db.String(100), db.ForeignKey('users.email'))
     schedule_id = db.Column('schedule_id',db.String(256),  db.ForeignKey('schedule.id'))
-    start_time = db.Column('start_time',db.DateTime, nullable=False, default=datetime.now)
-    end_time =db.Column('end_time',db.DateTime, nullable=False, default=datetime.now)
+    start_time = db.Column('start_time',db.DateTime, nullable=False, default=datetime.now(pytz.timezone('Europe/Madrid')))
+    end_time =db.Column('end_time',db.DateTime, nullable=False, default=datetime.now(pytz.timezone('Europe/Madrid')))
     
     def __init__(self,user_email,schedule_id,action,start_time,end_time):
         self.user_email=user_email
