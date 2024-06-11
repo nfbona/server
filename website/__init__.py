@@ -4,6 +4,7 @@ from dotenv import dotenv_values
 from datetime import timedelta
 from flask_login import LoginManager, current_user
 from Modules.models import db, SQLClass,CustomAnonymousUser
+from gpiozero import LED 
 
 # Set up SQLAlchemy engine and session
 sql = SQLClass(dotenv_values('.env')['MYSQL_ROOT_PASSWORD'])
@@ -13,6 +14,22 @@ def get_environ():
     env_variables = dotenv_values('.env')
     CRSF_KEY = env_variables['CRSF_KEY']
     return  CRSF_KEY
+
+def GPIO_state(relay_id,state):
+    pins = [3, 5, 7, 11, 13, 15, 29, 31]  # Add more pin numbers as needed
+    led = LED(pins[relay_id-1])
+    # Set up all pins as output
+    if state:
+        led.on()
+    else:
+        led.off()
+
+def last_state_gpios():
+    for each in sql.Relays.get_all():
+        print("GPIO: ",each._id," State: ",each._is_active)
+        #GPIO_state(each.gpio_number, each.state)
+    
+
 
 # Function to initialize Flask app
 def init_flask(crsf_key):
@@ -84,6 +101,7 @@ def create_app():
         print("Creating tables...")
         db.create_all()
         create_admin_user_if_not_exists()
+        last_state_gpios()
         
     @login_manager.needs_refresh_handler
     def refresh_login():

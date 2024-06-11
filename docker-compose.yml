@@ -32,13 +32,13 @@ services:
         build:
             context: .
             dockerfile: Dockerfile
-            target: dev
+            target: production
         ports:
             - 80:80
-            - 5678:5678
+            - 443:443   
         expose:
             - 80
-            - 5678
+            - 443
         networks:
             xarxa_interna:
                 ipv4_address: ${FLASK_APP_IP}

@@ -1,12 +1,11 @@
 from flask import Blueprint,  render_template, request,jsonify
 from flask_login import current_user
-from . import sql
-from .function import get_scheduled_events,create_event_schedule,update_event_schedule,delete_event_schedule,GPIO_state
+from . import sql, GPIO_state
+from .function import get_scheduled_events,create_event_schedule,update_event_schedule,delete_event_schedule
 from Modules.forms import UserField
 from .function import login_required_custom, login_required_admin,time_is_valid_end,conditions_to_update_or_create_event,is_user_valid
 from dateutil.parser import parse
 from html import escape
-import re
 
 
 pages = Blueprint("pages", __name__,template_folder='/app/templates', static_folder='/app/static')

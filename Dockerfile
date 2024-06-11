@@ -10,6 +10,7 @@ COPY ./app.py /app/app.py
 COPY ./.env /app/.env
 COPY ./wsgi.py /app/wsgi.py
 COPY ./requirements.txt /app/requirements.txt
+COPY ./cert /app/cert
 
 WORKDIR /app
 
@@ -29,8 +30,8 @@ CMD python -m debugpy --listen 0.0.0.0:5678 --wait-for-client -m gunicorn --bind
 # PRODUCTION
 FROM base as production
 
-CMD ["sh","-c","sleep 0 && gunicorn --bind 0.0.0.0:80 wsgi:app --workers 1 --threads 5 --worker-class=sync"]
-
+CMD ["sh","-c","gunicorn --certfile ./cert/cert.pem --keyfile ./cert/key.pem --bind 0.0.0.0:443 wsgi:app --workers 2 --threads 4 --worker-class=sync & exec gunicorn --bind 0.0.0.0:80 wsgi:app --workers 1 --threads 2 --worker-class=sync"]
+  
 #,"","1"]
 
 

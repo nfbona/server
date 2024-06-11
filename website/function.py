@@ -6,7 +6,6 @@ from dateutil.parser import parse
 from datetime import datetime,timedelta
 from Modules.forms import validator
 from html import escape
-from gpiozero import LED 
 import pytz
 
 # Decorator to check if user is logged in
@@ -121,12 +120,5 @@ def delete_event_schedule(request):
         all_schedule=sql.Schedules.get_all()
         event_list= list(map(create_enabled_event,all_schedule)) """      
         
-def GPIO_state(relay_id,state):
-    pins = [3, 5, 7, 11, 13, 15, 29, 31]  # Add more pin numbers as needed
-    led = LED([relay_id-1])
-    # Set up all pins as output
-    if state:
-        led.on()
-    else:
-        led.off()
+
 
