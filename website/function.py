@@ -6,7 +6,6 @@ from dateutil.parser import parse
 from datetime import datetime,timedelta
 from Modules.forms import validator
 from html import escape
-import pytz
 
 # Decorator to check if user is logged in
 def login_required_custom(f):
