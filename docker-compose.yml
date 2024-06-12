@@ -13,12 +13,10 @@ services:
             MYSQL_DATABASE: mysql
             FLASK_APP_IP: ${FLASK_APP_IP}
             MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-        command: --init-file /data/application/init.sql
         volumes:
             - ./MySql/data:/var/lib/mysql
             - ./MySql/logs:/var/log/mysql
             - ./MySql/my.cnf:/config/my.cnf
-            - ./MySql/init.sql:/config/initdb.d/init.sql
         networks:
             xarxa_interna:
                 ipv4_address: ${MYSQL_IP}

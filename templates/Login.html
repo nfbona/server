@@ -21,7 +21,6 @@
             <form action="{{ url_for('auth.login')}}" method="POST">
               <!-- CSRF token -->
               {{ form.hidden_tag() }}
-              
               <!-- FORMS -->
               <!-- Email -->
               {{ form.email(class="form-control", placeholder="name@example.com") }}

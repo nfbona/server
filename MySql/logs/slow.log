@@ -1,9 +1,0 @@
-mysqld, Version: 10.0.38-MariaDB-1~xenial (mariadb.org binary distribution). started with:
-Tcp port: 0  Unix socket: /var/run/mysqld/mysqld.sock
-Time                 Id Command    Argument
-mysqld, Version: 10.0.38-MariaDB-1~xenial (mariadb.org binary distribution). started with:
-Tcp port: 3306  Unix socket: /var/run/mysqld/mysqld.sock
-Time                 Id Command    Argument
-mysqld, Version: 10.5.25-MariaDB-ubu2004-log (mariadb.org binary distribution). started with:
-Tcp port: 0  Unix socket: /run/mysqld/mysqld.sock
-Time		    Id Command	Argument
