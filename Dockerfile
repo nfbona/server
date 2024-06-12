@@ -14,6 +14,10 @@ COPY ./cert /app/cert
 
 WORKDIR /app
 
+RUN apt-get update && apt-get install -y \
+    gcc \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN pip3 install Flask
 RUN pip install -r requirements.txt
