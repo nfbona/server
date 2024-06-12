@@ -133,7 +133,7 @@ class Users(UserMixin,BaseModel):
     _email = db.Column('email',db.String(100), primary_key=True)
     _date_added = db.Column('date_added',db.DateTime, default=datetime.now(pytz.timezone('Europe/Madrid')))
     last_login = db.Column('last_login',db.DateTime, default=datetime.now(pytz.timezone('Europe/Madrid')))
-    _password_hash= db.Column('password_hash',db.String(257),nullable=False)
+    _password_hash= db.Column('password_hash',db.String(256),nullable=False)
     _role_id = db.Column('role_id',db.Integer, db.ForeignKey('roles.id'),nullable=False,default=2)
     _color = db.Column('color',db.String(20))
     _is_session_active = db.Column('is_session_active',db.Boolean,nullable=False,default=True)
@@ -163,7 +163,7 @@ class Users(UserMixin,BaseModel):
 
     @password_hash.setter
     def password_hash(self, password):
-        self._password_hash = hashlib.scrypt(password.encode(), salt=self.email.encode(), n=16384,r=8,p=1,dklen=64).hex()
+        self._password_hash = hashlib.scrypt(str(password).encode(), salt=str(self.email).encode(), n=16384,r=8,p=1,dklen=64).hex()
 
     @property
     def role_id(self):
@@ -204,7 +204,7 @@ class Users(UserMixin,BaseModel):
         return ""
 
     def checkPass(self, password):
-        return hashlib.scrypt(password.encode(), salt=self.email.encode(), n=16384,r=8,p=1,dklen=64).hex() == self._password_hash
+        return hashlib.scrypt(str(password).encode(), salt=str(self.email).encode(), n=16384,r=8,p=1,dklen=64).hex() == self._password_hash
         
     def update_last_login(self):
         self.last_login=datetime.now(pytz.timezone('Europe/Madrid'))
@@ -355,7 +355,7 @@ class Schedules(BaseModel):
     user_email = db.Column('user_email',db.String(100), db.ForeignKey('users.email'))
     start_time = db.Column('start_time',db.DateTime)
     end_time = db.Column('end_time',db.DateTime)
-    id = db.Column('id',db.String(256),primary_key=True)
+    id = db.Column('id',db.String(191),primary_key=True)
         
     def __init__(self,email,start_time,end_time,id):
         self.start_time=start_time
@@ -476,7 +476,7 @@ class SignUpRequest(BaseModel):
     date = db.Column('date',db.DateTime, default=datetime.now)
     user_email = db.Column('user_email',db.String(100))
     id = db.Column('id',db.Integer, primary_key=True)
-    password= db.Column('password',db.String(257),nullable=False)
+    password= db.Column('password',db.String(256),nullable=False)
     
     def __init__(self,email,password):
         self.user_email=email
@@ -538,7 +538,7 @@ class LogRelays(Log):
 class LogSchedules(Log):
     __tablename__ = 'log_schedules'
     user_email = db.Column('user_email',db.String(100), db.ForeignKey('users.email'))
-    schedule_id = db.Column('schedule_id',db.String(256),  db.ForeignKey('schedule.id'))
+    schedule_id = db.Column('schedule_id',db.String(191),  db.ForeignKey('schedule.id'))
     start_time = db.Column('start_time',db.DateTime, nullable=False, default=datetime.now(pytz.timezone('Europe/Madrid')))
     end_time =db.Column('end_time',db.DateTime, nullable=False, default=datetime.now(pytz.timezone('Europe/Madrid')))
     

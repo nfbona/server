@@ -3,7 +3,7 @@ version: '3.9'
 services:
     mysql:
         container_name: mysql
-        image: lscr.io/linuxserver/mariadb:10.0
+        image: biarms/mysql:5.7.30
         restart: always
         build:
             context: ./MySql/
@@ -15,7 +15,6 @@ services:
             MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
         command: --init-file /data/application/init.sql
         volumes:
-            - ./MySql/init.sql:/data/application/init.sql
             - ./MySql/data:/var/lib/mysql
             - ./MySql/logs:/var/log/mysql
             - ./MySql/my.cnf:/config/my.cnf

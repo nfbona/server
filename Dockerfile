@@ -1,4 +1,4 @@
-FROM resin/rpi-raspbian:latest 
+
 FROM python:3.9-slim-buster as base
 
 # copy all necessary files into workdirectory

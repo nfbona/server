@@ -1,7 +1,7 @@
 # Import necessary modules
 from flask import Flask, redirect, url_for
 from dotenv import dotenv_values
-from datetime import timedelta
+from datetime import timedelta,datetime
 from flask_login import LoginManager, current_user
 from Modules.models import db, SQLClass,CustomAnonymousUser
 from gpiozero import LED 
@@ -27,7 +27,7 @@ def GPIO_state(relay_id,state):
 def last_state_gpios():
     for each in sql.Relays.get_all():
         print("GPIO: ",each._id," State: ",each._is_active)
-        #GPIO_state(each.gpio_number, each.state)
+        GPIO_state(each.gpio_number, each.state)
     
 
 
@@ -37,7 +37,7 @@ def init_flask(crsf_key):
     app.config['SECRET_KEY'] = str(crsf_key)
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=2)
     app.config['SESSION_TYPE'] = 'sqlalchemy'
-    app.config['SESSION_SQLALCHEMY'] = db
+    app.config['SESSION_SQLALCHEMY'] = sql.Session
     return app
 
 # Function to initialize SQLAlchemy
@@ -69,6 +69,24 @@ def init_login_manager(app):
 
 def create_admin_user_if_not_exists():
     user = sql.Users.get('admin@admin.admin')
+    roles = sql.Roles.get_all()
+    relays = sql.Relays.get_all()
+    print("Roles: ",roles)
+    now=datetime.now()
+    if not relays:
+        sql.Relays.new(1,'Relay1')
+        sql.Relays.new(2,'Relay2')
+        sql.Relays.new(3,'Relay3')
+        sql.Relays.new(4,'Relay4')
+        sql.Relays.new(5,'Relay5')
+        sql.Relays.new(6,'Relay6')
+        sql.Relays.new(7,'Relay7')
+        sql.Relays.new(8,'Relay8')
+    
+    if not roles:
+        new_admin_role = sql.Roles.new(1,'admin')
+        new_user_role = sql.Users.new(2,'user')
+    
     if not user:
         # User doesn't exist, so create a new user
         new_user = sql.Users.new('admin@admin.admin','admin',1)
@@ -76,6 +94,7 @@ def create_admin_user_if_not_exists():
     else:
         # User already exists
         return user
+    
 # Function to create Flask app
 def create_app():
     crsf_key = get_environ()  

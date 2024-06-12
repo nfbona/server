@@ -34,7 +34,7 @@ CREATE TABLE if not exists schedule (
     user_email VARCHAR(100), 
     start_time DATETIME, 
     end_time DATETIME, 
-    id VARCHAR(256) NOT NULL, 
+    id VARCHAR(191) NOT NULL, 
     FOREIGN KEY(user_email) REFERENCES users(email),
     PRIMARY KEY(id)
     );
@@ -70,7 +70,7 @@ CREATE TABLE if not exists log_schedules (
     action VARCHAR(100), 
     id INT AUTO_INCREMENT,  
     datetime DATETIME, 
-    schedule_id VARCHAR(256) NOT NULL, 
+    schedule_id VARCHAR(191) NOT NULL, 
     start_time DATETIME, 
     end_time DATETIME, 
     PRIMARY KEY(id)
