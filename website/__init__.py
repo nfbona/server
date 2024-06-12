@@ -4,7 +4,13 @@ from dotenv import dotenv_values
 from datetime import timedelta,datetime
 from flask_login import LoginManager, current_user
 from Modules.models import db, SQLClass,CustomAnonymousUser
-from gpiozero import LED 
+import RPi.GPIO as GPIO
+
+# Setup GPIO mode
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
+
+pins = [3, 3, 4, 17, 27, 22, 10, 9]  # Add more pin numbers as needed
 
 # Set up SQLAlchemy engine and session
 sql = SQLClass(dotenv_values('.env')['MYSQL_ROOT_PASSWORD'])
@@ -15,19 +21,20 @@ def get_environ():
     CRSF_KEY = env_variables['CRSF_KEY']
     return  CRSF_KEY
 
-def GPIO_state(relay_id,state):
-    pins = [3, 5, 7, 11, 13, 15, 29, 31]  # Add more pin numbers as needed
-    led = LED(pins[relay_id-1])
-    # Set up all pins as output
+def GPIO_state(relay_id, state):
+    # Assuming relay_id is numeric and directly corresponds to an index in pins
+    pin_number = pins[int(relay_id) - 1]
+    GPIO.setup(pin_number, GPIO.OUT)
+    
     if state:
-        led.on()
+        GPIO.output(pin_number, GPIO.HIGH)
     else:
-        led.off()
+        GPIO.output(pin_number, GPIO.LOW)
 
 def last_state_gpios():
     for each in sql.Relays.get_all():
-        print("GPIO: ",each._id," State: ",each._is_active)
-        GPIO_state(each.gpio_number, each.state)
+        print("GPIO: ", each._id, " State: ", each._is_active)
+        GPIO_state(each._id, each._is_active)
     
 
 
@@ -72,7 +79,6 @@ def create_admin_user_if_not_exists():
     roles = sql.Roles.get_all()
     relays = sql.Relays.get_all()
     print("Roles: ",roles)
-    now=datetime.now()
     if not relays:
         sql.Relays.new(1,'Relay1')
         sql.Relays.new(2,'Relay2')
@@ -84,8 +90,8 @@ def create_admin_user_if_not_exists():
         sql.Relays.new(8,'Relay8')
     
     if not roles:
-        new_admin_role = sql.Roles.new(1,'admin')
-        new_user_role = sql.Users.new(2,'user')
+        sql.Roles.new(1,'admin')
+        sql.Users.new(2,'user')
     
     if not user:
         # User doesn't exist, so create a new user
