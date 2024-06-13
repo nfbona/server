@@ -26,11 +26,13 @@ def GPIO_state(relay_id, state):
     # Assuming relay_id is numeric and directly corresponds to an index in pins
     pin_number = pins[int(relay_id) - 1]
     GPIO.setup(pin_number, GPIO.OUT)
-    
     if state:
         GPIO.output(pin_number, GPIO.HIGH)
     else:
         GPIO.output(pin_number, GPIO.LOW)
+    relay=sql.Relays.get(relay_id)
+    relay._is_active=state
+    sql.Relays.modify(relay)
 
 def last_state_gpios():
     for each in sql.Relays.get_all():
