@@ -42,7 +42,7 @@ def json():
                 relay.change_state()
                 sql.LogRelays.new(current_user.email,str(escape(request.json['id'])),relay.is_active)
                 sql.Relays.modify(relay)
-                GPIO_state(int(relay._id),relay.is_active)
+                GPIO_state(int(relay._id),relay._is_active)
 
             relays = {"Error":"0","relay":str(escape(request.json['id']))}
         else:

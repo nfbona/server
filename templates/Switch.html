@@ -39,7 +39,7 @@
           <tr>
             <td class="justify-content-center align-items-center">
               <div class="form-check form-switch">
-                <input id="checkbox{{ relay._id }}" class="form-check-input" type="checkbox" value="{{ relay._id }}" {% if relay.is_active %} checked {% endif %} onclick="disableCheckbox(this)" {%if not(is_users) %} disabled {% endif %}>                
+                <input id="checkbox{{ relay._id }}" class="form-check-input" type="checkbox" value="{{ relay._id }}" {% if relay._is_active %} checked {% endif %} onclick="disableCheckbox(this)" {%if not(is_users) %} disabled {% endif %}>                
               </div>
             </td>
             <td class="justify-content-center align-items-center">
@@ -102,7 +102,7 @@
 
     // AJAX call to backend
     $.ajax({
-      url: "/json",
+      url: "{{url_for('pages.json')}}",
       type: "POST",
       data: JSON.stringify({
         "id": checkbox.value,
