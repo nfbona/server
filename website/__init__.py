@@ -10,7 +10,7 @@ import RPi.GPIO as GPIO
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
 
-pins = [3, 3, 4, 17, 27, 22, 10, 9]  # Add more pin numbers as needed
+pins = [2, 3, 4, 17, 27, 22, 10, 9]  # Add more pin numbers as needed
 
 # Set up SQLAlchemy engine and session
 sql = SQLClass(dotenv_values('.env')['MYSQL_ROOT_PASSWORD'])
