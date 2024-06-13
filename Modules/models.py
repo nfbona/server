@@ -337,8 +337,14 @@ class Relays(BaseModel):
         return self._date_modified
     
     def is_wait_time_satisfied(self):
-        return (datetime.now(pytz.timezone('Europe/Madrid'))-timedelta(seconds=TIMETOWAIT)).astimezone() > self._date_modified.astimezone()
+    # Get the current time
+        now = datetime.now()
 
+        # Calculate the time difference in seconds
+        time_diff = (now - self._date_modified).total_seconds()
+
+        # Check if the wait time is satisfied
+        return time_diff >= TIMETOWAIT
     @classmethod
     def get(cls,id): 
         session = cls.db.Session()

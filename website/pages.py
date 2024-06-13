@@ -33,22 +33,17 @@ def user():
 @pages.route('/json', methods=['POST'])
 @login_required_custom
 def json():
-    
+    relays = {"Error":"1","relay":str(escape(request.json['id']))}
     if current_user.is_admin_role() or is_user_valid(current_user.email):
         relay=escape(request.json['id'])
         relay = sql.Relays.get(relay)
-        if relay and relay.is_wait_time_satisfied():
-            if relay:
-                relay.change_state()
-                sql.LogRelays.new(current_user.email,str(escape(request.json['id'])),relay.is_active)
-                sql.Relays.modify(relay)
-                GPIO_state(int(relay._id),relay._is_active)
+        if relay:
+            relay.change_state()
+            sql.LogRelays.new(current_user.email,str(escape(request.json['id'])),relay.is_active)
+            sql.Relays.modify(relay)
+            GPIO_state(int(relay._id),relay._is_active)
 
             relays = {"Error":"0","relay":str(escape(request.json['id']))}
-        else:
-            relays = {"Error":"1","relay":str(escape(request.json['id']))}
-    else:
-        relays = {"Error":"1","relay":str(escape(request.json['id']))}
     
     return relays
 
