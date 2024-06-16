@@ -244,7 +244,7 @@ class Users(UserMixin,BaseModel):
     def logout(cls,user):
         user.update_last_login()
         cls.modify(user)
-        user.session_hash = False
+        user.is_session_active = False
         logout_user()
             
     # Get user from db //not initialized in sql server
@@ -400,7 +400,7 @@ class Schedules(BaseModel):
     @classmethod
     def get_future_user_schedules(cls,email):
         session = cls.db.Session()
-        schedules = session.query(Schedules).filter_by(user_email=email).filter(Schedules.end_time>datetime.now(pytz.timezone('Europe/Madrid'))).order_by(Schedules.end_time).all()
+        schedules = session.query(Schedules).filter_by(user_email==email).filter(Schedules.end_time>datetime.now(pytz.timezone('Europe/Madrid'))).order_by(Schedules.end_time).all()
         session.close()
         return schedules  
     
@@ -523,7 +523,6 @@ class LogUsers(Log):
         session.close()
         return logs
     
-
 class LogRelays(Log):
     __tablename__ = 'log_relays'
     user_email = db.Column('user_email',db.String(100),  db.ForeignKey('users.email'))

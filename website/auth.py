@@ -131,14 +131,14 @@ def signuprequestdeny(email):
 @auth.route('/deleteUsers', methods=['POST'])
 @login_required_admin
 def deleteUsers():
-    userList=escape(request.json['emails'])
+    userList=(request.json['emails'])
     response={"users_deleted":[], "users_not_existing":[]}
     for email in userList:
         if(validator.is_email(email)):
             user=sql.Users.get(email)
             if user:
                 sql.LogUsers.new(current_user.email,'Deactivate user')
-                sql.Schedules.delete_all_user_future_schedules(user)
+                sql.Schedules.delete_all_user_future_schedules(email)
                 user.is_active=False
                 sql.Users.modify(user)
                 response.get('users_deleted').append(email)
@@ -151,13 +151,13 @@ def deleteUsers():
 @auth.route('/roleUser', methods=['POST'])
 @login_required_admin
 def roleUser():
-    user=escape(request.json['email'])
+    user=str(request.json['email'])
     response={"is_active":""}
     if(validator.is_email(user)):
         user=sql.Users.get(user)
         if user:
-            sql.Users.change_role(user,escape(request.json['role']))
-            sql.LogUsers.new( user.email,current_user.email+' changing role to '+str(escape(request.json['role'])))
+            sql.Users.change_role(user,int(escape(str(request.json['role']))))
+            sql.LogUsers.new( user.email,current_user.email+' changing role to '+escape(str(request.json['role']))))
             response['is_active']="OK"
         else:
             response['is_active']="Error"
